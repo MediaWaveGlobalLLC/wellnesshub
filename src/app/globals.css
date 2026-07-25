@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/*
+  ─────────────────────────────────────────────
+  SIEMBRA CAFE · Design Tokens
+  Fuente de verdad: Siembra Brand Book (pág. 3-4)
+  Solo los 10 colores oficiales. Nada fuera de la paleta.
+  ─────────────────────────────────────────────
+*/
+@theme {
+  /* Paleta oficial — Brand Book pág. 3 */
+  --color-terracota: #cb3700;      /* Primario — fondos hero, CTAs */
+  --color-mustard: #d08f29;        /* Acento cálido — highlights */
+  --color-avena: #ffd89e;          /* Texto sobre oscuro, logo beige */
+  --color-leche: #f4ece3;          /* Fondos claros, "papel" */
+  --color-espresso: #45200a;       /* Texto principal, fondos oscuros */
+  --color-teatree: #b5cb97;        /* Fondos suaves sección matcha */
+  --color-matcha: #b7b542;         /* Acento matcha */
+  --color-olive: #627016;          /* Texto/acentos verdes profundos */
+  --color-lightmatcha: #9ea65c;    /* Acento verde claro */
+  --color-forest: #0e3117;         /* Fondos oscuros verdes */
+
+  /* Tipografía — Brand Book pág. 4 */
+  /* Display: The Seasons (brand book). Fraunces es la alternativa libre más
+     cercana (serif alto contraste + itálicas) mientras se consigue el archivo
+     real de The Seasons — cambiar en src/lib/fonts.ts es una línea. */
+  --font-display: var(--font-fraunces);
+  --font-serif: var(--font-droid);
+  --font-sans: var(--font-poppins);
+
+  /* Sombras cálidas de la marca */
+  --shadow-warm: 0 20px 50px -20px rgb(69 32 10 / 0.35);
+  --shadow-soft: 0 8px 30px -12px rgb(69 32 10 / 0.2);
+}
+
+:root {
+  --background: var(--color-leche);
+  --foreground: var(--color-espresso);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-terracota);
+  color: var(--color-leche);
+}
+
+/* Textura de grano/estuco sutil para fondos de color (motivo del brand book) */
+.grain {
+  position: relative;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Píldora de atributos (las "píldoras" del brand book) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  border: 1.5px solid currentColor;
+  padding: 0.35rem 1rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Filete horizontal flanqueando taglines (motivo del brand book) */
+.rule-line {
+  display: inline-block;
+  width: 2.5rem;
+  height: 1px;
+  background: currentColor;
+  vertical-align: middle;
+  opacity: 0.6;
+}
