@@ -31,6 +31,15 @@
   /* Sombras cálidas de la marca */
   --shadow-warm: 0 20px 50px -20px rgb(69 32 10 / 0.35);
   --shadow-soft: 0 8px 30px -12px rgb(69 32 10 / 0.2);
+
+  /* Animaciones de la marca */
+  --animate-marquee: marquee 36s linear infinite;
+  --animate-spin-slow: spin 24s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 :root {
@@ -90,4 +99,22 @@ body {
   background: currentColor;
   vertical-align: middle;
   opacity: 0.6;
+}
+
+/* Texto de contorno (títulos gigantes decorativos) */
+.text-outline {
+  -webkit-text-stroke: 1.5px currentColor;
+  color: transparent;
+}
+
+/* Vapor que sube de la taza (hebras onduladas SVG) */
+@keyframes steam-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 0.85; }
+  55% { opacity: 0.35; }
+  100% { transform: translateY(-26px); opacity: 0; }
+}
+.steam-path {
+  animation: steam-rise 3.2s ease-in-out infinite;
+  filter: blur(0.6px);
 }
