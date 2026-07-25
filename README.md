@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Siembra Cafe & Matcha Bar — Wellness Hub
 
-## Getting Started
+Sitio web oficial de **Siembra Cafe & Matcha Bar** (Wellness Hub | Coffee & Matcha Bar), Condado, Puerto Rico.
 
-First, run the development server:
+> *Siembra bienestar. Cosecha tu mejor versión.*
+
+## 🌿 El proyecto
+
+Web pública bilingüe (español / inglés) para el café & matcha bar de Siembra:
+
+- **Home** — hero editorial, manifiesto, barras de Café y Matcha, mezclas funcionales, "Un día en Siembra" y Club Siembra
+- **Menú** — carta oficial con precios verificados
+- **Experiencia** — eventos y comunidad (yoga, running, bienestar)
+- **Nosotros** — historia y pilares de la marca
+- **Tienda** — catálogo de productos
+- **Visítanos** — ubicación, horario y contacto
+
+**Próximamente (Parte 2):** Club Siembra — programa de lealtad, pedidos y experiencias exclusivas para miembros.
+
+## ☕ El negocio
+
+| | |
+|---|---|
+| **Nombre** | Siembra Cafe & Matcha Bar (Wellness Hub) |
+| **Dirección** | 1024 Ashford Avenue, Condado, San Juan, Puerto Rico |
+| **Horario** | 10:00 AM – 7:00 PM |
+| **Teléfono** | (939) 835-0044 |
+| **Instagram** | [@thewellnesshubpr](https://instagram.com/thewellnesshubpr) |
+
+**Pilares:** Nutre tu cuerpo ✦ Fortalece tu bienestar ✦ Eleva tu comunidad
+
+## 🛠️ Stack
+
+- [Next.js](https://nextjs.org) 16 (App Router) + React 19
+- TypeScript
+- [Tailwind CSS](https://tailwindcss.com) 4 (CSS-first, tokens de la paleta oficial de 10 colores de la marca)
+- Framer Motion (animaciones)
+- Tipografías: Fraunces (display) + Droid Serif + Poppins
+
+## 🚀 Desarrollo local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build   # build de producción
+npm run lint    # ESLint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🌐 Producción
 
-## Learn More
+Desplegado en Vercel (Media Wave Global). Alias estable:
 
-To learn more about Next.js, take a look at the following resources:
+**https://wellnesshub-media-wave-global.vercel.app**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Los pushes a `main` despliegan automáticamente.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📁 Estructura
 
-## Deploy on Vercel
+```
+src/
+  app/            # rutas públicas (/, /menu, /experiencia, /nosotros, /tienda, /visitanos)
+  components/     # UI compartida (Header, Footer, animaciones)
+  lib/            # datos del sitio (site.ts), i18n, fuentes
+public/brand/     # logos, fotos y elementos de marca (WebP)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*Siembra Cafe & Matcha Bar · Veinte de Diez LLC*
