@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "brand": "SIEMBRA Wellness Hub | Coffee & Matcha Bar",
+  "colors": {
+    "terracotta": "#CB3700",
+    "mustard": "#D08F29",
+    "oat": "#FFD89E",
+    "milk": "#F4ECE3",
+    "espresso": "#45200A",
+    "teaTree": "#B5CB97",
+    "matcha": "#B7B542",
+    "olive": "#627016",
+    "lightMatcha": "#9EA65C",
+    "forest": "#0E3117"
+  },
+  "semantic": {
+    "background": "{colors.milk}",
+    "surface": "#FFF9F2",
+    "surfaceMuted": "#F8EFE5",
+    "text": "{colors.espresso}",
+    "textMuted": "#6D523F",
+    "primary": "{colors.terracotta}",
+    "primaryHover": "#A92E00",
+    "secondary": "{colors.forest}",
+    "border": "#DFD0C2",
+    "success": "{colors.forest}",
+    "warning": "{colors.mustard}",
+    "danger": "#A83228"
+  },
+  "typography": {
+    "display": [
+      "The Seasons",
+      "Droid Serif",
+      "Georgia",
+      "serif"
+    ],
+    "heading": [
+      "Droid Serif",
+      "Georgia",
+      "serif"
+    ],
+    "body": [
+      "Poppins",
+      "Arial",
+      "sans-serif"
+    ],
+    "weights": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    }
+  },
+  "radius": {
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "maxApproved": 24
+  },
+  "spacing": {
+    "unit": 4,
+    "sectionDesktop": 96,
+    "sectionMobile": 56
+  },
+  "layout": {
+    "contentMax": 1280,
+    "desktopGutter": 40,
+    "tabletGutter": 24,
+    "mobileGutter": 18
+  },
+  "controls": {
+    "height": 50,
+    "buttonMinHeight": 48
+  },
+  "motion": {
+    "fastMs": 140,
+    "normalMs": 220,
+    "slowMs": 360
+  },
+  "forbidden": {
+    "tailwindColorFamilies": [
+      "blue",
+      "indigo",
+      "violet",
+      "purple",
+      "fuchsia",
+      "pink",
+      "cyan",
+      "teal"
+    ],
+    "cssFeatures": [
+      "backdrop-filter",
+      "backdrop-blur",
+      "linear-gradient",
+      "radial-gradient"
+    ],
+    "fontFamilies": [
+      "Inter",
+      "Roboto",
+      "Montserrat",
+      "Playfair Display"
+    ],
+    "remoteImageHosts": [
+      "images.unsplash.com",
+      "source.unsplash.com",
+      "placehold.co",
+      "picsum.photos"
+    ]
+  }
+}

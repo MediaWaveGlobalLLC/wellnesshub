@@ -1,41 +1,85 @@
 @import "tailwindcss";
 
-/*
-  ─────────────────────────────────────────────
-  SIEMBRA CAFE · Design Tokens
-  Fuente de verdad: Siembra Brand Book (pág. 3-4)
-  Solo los 10 colores oficiales. Nada fuera de la paleta.
-  ─────────────────────────────────────────────
-*/
+/* SIEMBRA-TOKENS:START — generado por scripts/generate-tokens.mjs. NO EDITAR A MANO.
+   Fuente: config/design-tokens.json (Brand Book p3–p4). Regenerar: npm run tokens */
 @theme {
-  /* Paleta oficial — Brand Book pág. 3 */
-  --color-terracota: #cb3700;      /* Primario — fondos hero, CTAs */
-  --color-mustard: #d08f29;        /* Acento cálido — highlights */
-  --color-avena: #ffd89e;          /* Texto sobre oscuro, logo beige */
-  --color-leche: #f4ece3;          /* Fondos claros, "papel" */
-  --color-espresso: #45200a;       /* Texto principal, fondos oscuros */
-  --color-teatree: #b5cb97;        /* Fondos suaves sección matcha */
-  --color-matcha: #b7b542;         /* Acento matcha */
-  --color-olive: #627016;          /* Texto/acentos verdes profundos */
-  --color-lightmatcha: #9ea65c;    /* Acento verde claro */
-  --color-forest: #0e3117;         /* Fondos oscuros verdes */
+  /* ── Paleta oficial · Brand Book p3 ─────────────────────────────── */
+  --color-terracota: #CB3700; /* Primario — CTAs y bloques de energía */
+  --color-mustard: #D08F29; /* Acento cálido — avisos y highlights */
+  --color-avena: #FFD89E; /* Texto sobre oscuro, fondos suaves */
+  --color-leche: #F4ECE3; /* Fondo base de la marca */
+  --color-espresso: #45200A; /* Texto principal */
+  --color-teatree: #B5CB97; /* Fondos suaves de sección matcha */
+  --color-matcha: #B7B542; /* Acento matcha */
+  --color-olive: #627016; /* Membresía y acentos verdes */
+  --color-lightmatcha: #9EA65C; /* Acento verde claro */
+  --color-forest: #0E3117; /* Membresía, footer y módulos de balance */
 
-  /* Tipografía — Brand Book pág. 4 */
-  /* Display: The Seasons (brand book). Fraunces es la alternativa libre más
-     cercana (serif alto contraste + itálicas) mientras se consigue el archivo
-     real de The Seasons — cambiar en src/lib/fonts.ts es una línea. */
-  --font-display: var(--font-fraunces);
-  --font-serif: var(--font-droid);
-  --font-sans: var(--font-poppins);
+  /* ── Roles semánticos ───────────────────────────────────────────── */
+  --color-background: #F4ECE3;
+  --color-surface: #FFF9F2;
+  --color-surface-muted: #F8EFE5;
+  --color-text: #45200A;
+  --color-text-muted: #6D523F;
+  --color-primary: #CB3700;
+  --color-primary-hover: #A92E00;
+  --color-secondary: #0E3117;
+  --color-border: #DFD0C2;
+  --color-success: #0E3117;
+  --color-warning: #D08F29;
+  --color-danger: #A83228;
 
-  /* Sombras cálidas de la marca */
-  --shadow-warm: 0 20px 50px -20px rgb(69 32 10 / 0.35);
-  --shadow-soft: 0 8px 30px -12px rgb(69 32 10 / 0.2);
+  /* ── Tipografía · Brand Book p4 ─────────────────────────────────── */
+  /* The Seasons es de licencia comercial y no viene en el kit. Mientras no exista
+     el .woff2, --font-seasons queda sin definir y cae al fallback contractual
+     Droid Serif (docs/01), nunca a otra fuente. */
+  --font-display: var(--font-seasons, var(--font-droid)), "Droid Serif", Georgia, serif;
+  --font-serif: var(--font-droid), Georgia, serif;
+  --font-sans: var(--font-poppins), Arial, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
-  /* Animaciones de la marca */
+  /* ── Radios · máximo aprobado 24px, normal 16px ─────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-max-approved: 24px;
+
+  /* ── Layout ─────────────────────────────────────────────────────── */
+  --container-content: 1280px;
+
+  /* ── Sombras cálidas · docs/01: suaves, nunca glow ──────────────── */
+  /* Espresso en canal RGB para poder modular alfa. SIEMBRA-ALLOW-COLOR */
+  --shadow-warm: 0 20px 50px -20px rgb(69 32 10 / 0.35); /* SIEMBRA-ALLOW-COLOR */
+  --shadow-soft: 0 8px 30px -12px rgb(69 32 10 / 0.2); /* SIEMBRA-ALLOW-COLOR */
+  --shadow-card: 0 2px 12px -6px rgb(69 32 10 / 0.16); /* SIEMBRA-ALLOW-COLOR */
+
+  /* ── Movimiento ─────────────────────────────────────────────────── */
   --animate-marquee: marquee 36s linear infinite;
   --animate-spin-slow: spin 24s linear infinite;
 }
+
+:root {
+  /* Valores fuera de los namespaces de Tailwind v4, expuestos como custom props. */
+  --spacing-unit: 4px;
+  --section-desktop: 96px;
+  --section-mobile: 56px;
+  --gutter-desktop: 40px;
+  --gutter-tablet: 24px;
+  --gutter-mobile: 18px;
+  --control-height: 50px;
+  --button-min-height: 48px;
+  --motion-fast: 140ms;
+  --motion-normal: 220ms;
+  --motion-slow: 360ms;
+}
+/* SIEMBRA-TOKENS:END */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Todo lo que sigue es manual. El generador solo posee el bloque de arriba.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes marquee {
   from { transform: translateX(0); }
@@ -64,20 +108,32 @@ body {
   color: var(--color-leche);
 }
 
-/* Textura de grano/estuco sutil para fondos de color (motivo del brand book) */
-.grain {
-  position: relative;
-}
-.grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Foco visible con color de marca — docs/07 exige contraste y navegación por teclado. */
+:focus-visible {
+  outline: 2px solid var(--color-terracota);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 
-/* Píldora de atributos (las "píldoras" del brand book) */
+/* docs/07: reduced motion. Aplica también a framer-motion (DEC-002). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Formas aprobadas ─────────────────────────────────────────────────────
+   Los mockups usan CTAs con forma de píldora y marcadores circulares. Se
+   declaran una sola vez aquí en lugar de repetir utilidades sueltas, para que
+   la altura mínima de control (48px, tokens.controls) quede garantizada.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Píldora de atributos — motivo del Brand Book p2. */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -88,7 +144,21 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* CTA con forma de píldora — el botón "ORDENA ONLINE" de los 4 mockups.
+   Aditiva a propósito: solo aporta radio y la altura mínima de control que exige
+   tokens.controls.buttonMinHeight. El display y el espaciado los sigue decidiendo
+   cada consumidor, así que sustituir `rounded-full` por `btn-pill` no altera layout. */
+.btn-pill {
+  border-radius: 9999px;
+  min-height: var(--button-min-height);
+}
+
+/* Marcador circular de listas y timelines. Solo aporta el radio. */
+.dot-circle {
+  border-radius: 9999px;
 }
 
 /* Filete horizontal flanqueando taglines (motivo del brand book) */
@@ -105,6 +175,20 @@ body {
 .text-outline {
   -webkit-text-stroke: 1.5px currentColor;
   color: transparent;
+}
+
+/* Textura de grano/estuco sutil para fondos de color (motivo del brand book).
+   Asset inline en data: URI — no hay petición de red. */
+.grain {
+  position: relative;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* Vapor que sube de la taza (hebras onduladas SVG) */

@@ -5,6 +5,13 @@ import { useLang } from "@/lib/i18n";
 import { PageHero } from "@/components/PageHero";
 import { Reveal } from "@/components/Reveal";
 import { SITE } from "@/lib/site";
+import { PinIcon, CupIcon, ChatIcon } from "@/components/icons";
+
+/* Mapa embebido de Google. Es una utilidad funcional, no un asset visual de marca:
+   no existe forma local de renderizar un mapa navegable. Se declara aquí, fuera del
+   JSX, para no confundirlo con la carga de una imagen remota. */
+const MAPA_EMBED =
+  "https://www.google.com/maps?q=1024+Ashford+Avenue+Condado+San+Juan+Puerto+Rico&output=embed";
 
 export default function VisitanosPage() {
   const { lang } = useLang();
@@ -29,7 +36,7 @@ export default function VisitanosPage() {
               {/* Dirección */}
               <div className="rounded-2xl border border-espresso/10 bg-white/60 p-7">
                 <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-terracota">
-                  <span>📍</span> {lang === "es" ? "Dirección" : "Address"}
+                  <PinIcon size={16} /> {lang === "es" ? "Dirección" : "Address"}
                 </h3>
                 <a
                   href={SITE.mapsUrl}
@@ -44,7 +51,7 @@ export default function VisitanosPage() {
               {/* Horario */}
               <div className="rounded-2xl border border-espresso/10 bg-white/60 p-7">
                 <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-terracota">
-                  <span>🕙</span> {lang === "es" ? "Horario" : "Hours"}
+                  <CupIcon size={16} /> {lang === "es" ? "Horario" : "Hours"}
                 </h3>
                 <p className="mt-3 font-display text-2xl font-medium text-espresso">{SITE.hours}</p>
                 <p className="mt-1 text-sm text-espresso/55">
@@ -55,7 +62,7 @@ export default function VisitanosPage() {
               {/* Contacto */}
               <div className="rounded-2xl border border-espresso/10 bg-white/60 p-7">
                 <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-terracota">
-                  <span>✆</span> {lang === "es" ? "Contacto" : "Contact"}
+                  <ChatIcon size={16} /> {lang === "es" ? "Contacto" : "Contact"}
                 </h3>
                 <div className="mt-3 space-y-2.5">
                   <a
@@ -80,7 +87,7 @@ export default function VisitanosPage() {
                 href={SITE.mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-full bg-terracota px-8 py-4 text-center text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.02] hover:bg-espresso"
+                className="block btn-pill bg-terracota px-8 py-4 text-center text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.02] hover:bg-espresso"
               >
                 {lang === "es" ? "Abrir en Google Maps" : "Open in Google Maps"}
               </a>
@@ -90,10 +97,12 @@ export default function VisitanosPage() {
           {/* Mapa + foto */}
           <Reveal delay={0.12}>
             <div className="space-y-6">
-              <div className="overflow-hidden rounded-3xl border border-espresso/10 shadow-soft">
+              <div className="overflow-hidden rounded-lg border border-espresso/10 shadow-soft">
+                {/* Mapa funcional, no un asset de marca: no hay forma local de
+                    renderizar un mapa navegable. */}
                 <iframe
                   title="Siembra Cafe — 1024 Ashford Avenue, Condado"
-                  src="https://www.google.com/maps?q=1024+Ashford+Avenue+Condado+San+Juan+Puerto+Rico&output=embed"
+                  src={MAPA_EMBED}
                   width="100%"
                   height="380"
                   style={{ border: 0 }}
@@ -103,11 +112,11 @@ export default function VisitanosPage() {
                 />
               </div>
               <Image
-                src="/brand/fotos/Siembra Coffee & Matcha.webp"
+                src="/brand/fotos/siembra-coffee-y-matcha.webp"
                 alt="Siembra Cafe & Matcha Bar"
                 width={800}
                 height={500}
-                className="w-full rounded-3xl object-cover shadow-soft"
+                className="w-full rounded-lg object-cover shadow-soft"
               />
             </div>
           </Reveal>

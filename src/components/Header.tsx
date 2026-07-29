@@ -7,15 +7,20 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLang } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
+import { NAV_PRINCIPAL, navVisible } from "@/lib/nav";
+import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
+import { BagIcon } from "@/components/icons";
+import { cn } from "@/lib/cn";
 
-const NAV = [
-  { href: "/menu", es: "Menú", en: "Menu" },
-  { href: "/experiencia", es: "Experiencia", en: "Experience" },
-  { href: "/nosotros", es: "Nosotros", en: "About" },
-  { href: "/tienda", es: "Tienda", en: "Shop" },
-  { href: "/visitanos", es: "Visítanos", en: "Visit" },
-];
-
+/**
+ * Header canónico — DEC-005 / plan D6.
+ *
+ * Composición del mockup 03 (el más completo de los cuatro): logo a la izquierda,
+ * navegación al centro y CTA terracota con forma de píldora + bolsa a la derecha.
+ *
+ * Sin desenfoque de fondo: docs/01 lo prohíbe. Al hacer scroll el header pasa a un
+ * fondo Leche sólido con borde fino.
+ */
 export function Header() {
   const { lang, setLang, t } = useLang();
   const pathname = usePathname();
@@ -30,96 +35,116 @@ export function Header() {
   }, []);
 
   const solid = scrolled || open;
-  // La home abre con hero oscuro (logo blanco); las páginas internas abren
-  // con fondo claro (logo negro). Al hacer scroll, siempre fondo claro.
-  const isHome = pathname === "/";
-  const useWhiteLogo = isHome && !solid;
+  // Solo la home abre sobre un hero Forest. En el resto de las páginas el header
+  // arranca sobre fondo Leche, así que el texto claro sería ilegible: se usa
+  // Espresso aunque el header aún esté transparente.
+  const sobreHeroOscuro = pathname === "/" && !solid;
+  const items = navVisible(NAV_PRINCIPAL);
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-        solid
-          ? "bg-leche/95 backdrop-blur-md shadow-soft border-b border-espresso/10"
-          : "bg-transparent"
-      }`}
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 transition-colors duration-500",
+        solid ? "border-b border-espresso/10 bg-leche shadow-soft" : "bg-transparent"
+      )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5" aria-label="Siembra Cafe — Home">
+      <div className="mx-auto flex max-w-[var(--container-content)] items-center justify-between px-5 py-3.5 sm:px-8">
+        <Link href="/" className="flex items-center" aria-label="SIEMBRA — Inicio">
           <Image
-            src={useWhiteLogo ? "/brand/logos/Siembra Logo Blanco.webp" : "/brand/logos/Siembra Logo Negro.webp"}
-            alt="Siembra Cafe & Matcha Bar"
+            src={sobreHeroOscuro ? BRAND_ASSETS.siembraLogoBlanco.src : BRAND_ASSETS.siembraLogoNegro.src}
+            alt="SIEMBRA — Wellness Hub | Coffee &amp; Matcha Bar"
             width={140}
             height={44}
             priority
-            className="h-9 w-auto sm:h-10 transition-all"
+            className="h-9 w-auto sm:h-10"
           />
         </Link>
 
-        {/* Nav desktop */}
-        <nav className="hidden items-center gap-7 lg:flex">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-[13px] font-semibold tracking-[0.08em] uppercase transition-colors hover:opacity-70 ${
-                solid ? "text-espresso" : "text-leche"
-              }`}
-            >
-              {t(item)}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Principal">
+          {items.map((item) => {
+            const activo = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={activo ? "page" : undefined}
+                className={cn(
+                  "text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors",
+                  sobreHeroOscuro ? "text-leche" : "text-espresso",
+                  activo
+                    ? "underline decoration-terracota decoration-2 underline-offset-[6px]"
+                    : "hover:text-terracota"
+                )}
+              >
+                {t(item)}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Acciones */}
         <div className="flex items-center gap-3">
-          {/* Toggle idioma */}
           <button
             onClick={() => setLang(lang === "es" ? "en" : "es")}
-            className={`rounded-full border-1.5 px-3 py-1 text-[11px] font-bold tracking-widest transition-all hover:scale-105 ${
-              solid
-                ? "border-espresso/40 text-espresso hover:border-espresso"
-                : "border-leche/50 text-leche hover:border-leche"
-            }`}
-            aria-label="Cambiar idioma / Switch language"
+            className={cn(
+              "btn-pill min-h-0 border-[1.5px] px-3 py-1 text-[11px] font-bold tracking-widest transition-colors",
+              sobreHeroOscuro
+                ? "border-leche/50 text-leche hover:border-leche"
+                : "border-espresso/40 text-espresso hover:border-espresso"
+            )}
+            aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
           >
             {lang === "es" ? "EN" : "ES"}
           </button>
 
-          {/* CTA Club */}
+          {/* D7: "Ordena online" es un CTA, no un motor de pedidos. Apunta al menú
+              hasta que exista una URL de pedidos real. */}
           <Link
-            href="/#club"
-            className="hidden rounded-full bg-terracota px-5 py-2 text-[12px] font-bold tracking-[0.08em] uppercase text-leche shadow-warm transition-all hover:bg-espresso hover:scale-[1.03] sm:inline-block"
+            href="/menu"
+            className="btn-pill hidden items-center bg-terracota px-5 text-[12px] font-bold uppercase tracking-[0.08em] text-leche transition-colors hover:bg-primary-hover sm:inline-flex"
           >
-            {lang === "es" ? "Únete al Club" : "Join the Club"}
+            {lang === "es" ? "Ordena online" : "Order online"}
           </Link>
 
-          {/* Hamburguesa móvil */}
+          <Link
+            href="/tienda"
+            aria-label={lang === "es" ? "Tienda" : "Shop"}
+            className={cn(
+              "hidden p-2 transition-colors sm:block",
+              sobreHeroOscuro ? "text-leche hover:text-avena" : "text-espresso hover:text-terracota"
+            )}
+          >
+            <BagIcon size={20} />
+          </Link>
+
           <button
             onClick={() => setOpen(!open)}
-            className={`flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden ${
-              solid ? "text-espresso" : "text-leche"
-            }`}
-            aria-label="Abrir menú / Open menu"
+            className={cn(
+              "flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden",
+              sobreHeroOscuro ? "text-leche" : "text-espresso"
+            )}
+            aria-expanded={open}
+            aria-controls="menu-movil"
+            aria-label={open ? "Cerrar menú" : "Abrir menú"}
           >
-            <span className={`h-0.5 w-6 bg-current transition-all ${open ? "translate-y-2 rotate-45" : ""}`} />
-            <span className={`h-0.5 w-6 bg-current transition-all ${open ? "opacity-0" : ""}`} />
-            <span className={`h-0.5 w-6 bg-current transition-all ${open ? "-translate-y-2 -rotate-45" : ""}`} />
+            <span className={cn("h-0.5 w-6 bg-current transition-transform", open && "translate-y-2 rotate-45")} />
+            <span className={cn("h-0.5 w-6 bg-current transition-opacity", open && "opacity-0")} />
+            <span className={cn("h-0.5 w-6 bg-current transition-transform", open && "-translate-y-2 -rotate-45")} />
           </button>
         </div>
       </div>
 
-      {/* Menú móvil */}
       <AnimatePresence>
         {open && (
           <motion.nav
+            id="menu-movil"
+            aria-label="Principal móvil"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden bg-leche lg:hidden"
           >
             <div className="flex flex-col gap-1 px-6 pb-6 pt-2">
-              {NAV.map((item, i) => (
+              {items.map((item, i) => (
                 <motion.div
                   key={item.href}
                   initial={{ opacity: 0, x: -16 }}
@@ -136,13 +161,13 @@ export function Header() {
                 </motion.div>
               ))}
               <Link
-                href="/#club"
+                href="/menu"
                 onClick={() => setOpen(false)}
-                className="mt-4 rounded-full bg-terracota px-6 py-3 text-center text-sm font-bold uppercase tracking-widest text-leche"
+                className="btn-pill mt-4 flex justify-center bg-terracota px-6 text-sm font-bold uppercase tracking-widest text-leche"
               >
-                {lang === "es" ? "Únete al Club" : "Join the Club"}
+                {lang === "es" ? "Ordena online" : "Order online"}
               </Link>
-              <p className="mt-4 text-center text-xs text-espresso/60">
+              <p className="mt-4 text-center text-xs text-text-muted">
                 {SITE.hours} · {SITE.instagram}
               </p>
             </div>

@@ -48,7 +48,7 @@ export default function ExperienciaPage() {
                       <span className="font-display text-2xl font-medium text-terracota">{e.hora}</span>
                     </div>
                     <div className="relative hidden sm:block">
-                      <span className="block h-3 w-3 rounded-full border-2 border-terracota bg-leche" />
+                      <span className="block h-3 w-3 dot-circle border-2 border-terracota bg-leche" />
                     </div>
                     <div className="flex-1 rounded-2xl border border-espresso/10 bg-white/60 p-5 transition-all hover:border-terracota/40 hover:shadow-soft">
                       <h3 className="font-display text-xl font-medium text-espresso">{t(e)}</h3>
@@ -81,7 +81,7 @@ export default function ExperienciaPage() {
           <div className="grid gap-8 md:grid-cols-2">
             {/* Wellness */}
             <Reveal>
-              <div className="rounded-3xl border border-leche/15 bg-leche/5 p-8">
+              <div className="rounded-lg border border-leche/15 bg-leche/5 p-8">
                 <h3 className="font-display text-2xl font-medium text-teatree">
                   {lang === "es" ? "Wellness Program" : "Wellness Program"}
                 </h3>
@@ -97,7 +97,7 @@ export default function ExperienciaPage() {
 
             {/* Sports */}
             <Reveal delay={0.12}>
-              <div className="rounded-3xl border border-leche/15 bg-leche/5 p-8">
+              <div className="rounded-lg border border-leche/15 bg-leche/5 p-8">
                 <h3 className="font-display text-2xl font-medium text-mustard">
                   {lang === "es" ? "Sports Program" : "Sports Program"}
                 </h3>

@@ -28,7 +28,7 @@ export default function NosotrosPage() {
             <div className="relative mx-auto max-w-md">
               <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-teatree/30 blur-2xl" />
               <Image
-                src="/brand/fotos/Dueña de Siembra.webp"
+                src="/brand/fotos/duena-de-siembra.webp"
                 alt={`${SITE.ceo}, fundadora de Siembra Cafe`}
                 width={700}
                 height={850}

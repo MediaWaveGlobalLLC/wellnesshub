@@ -12,10 +12,10 @@ export function PageHero({
   title: string;
   subtitle?: string;
 }) {
+  // Sin orbes difuminados de color: docs/01 prohíbe el glow. La calidez la aporta
+  // la textura de grano del fondo.
   return (
     <section className="grain relative overflow-hidden bg-leche pb-12 pt-36 sm:pt-40">
-      <div className="pointer-events-none absolute -right-20 top-20 h-72 w-72 rounded-full bg-teatree/30 blur-[90px]" />
-      <div className="pointer-events-none absolute -left-20 top-40 h-64 w-64 rounded-full bg-mustard/20 blur-[90px]" />
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <motion.p
           initial={{ opacity: 0, y: 16 }}

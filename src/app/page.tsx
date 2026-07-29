@@ -37,13 +37,9 @@ export default function Home() {
   return (
     <>
       {/* ═══════════ HERO — AMANECER EN SIEMBRA ═══════════ */}
+      {/* Bloque Forest plano. Los orbes difuminados de terracota y mustard se
+          eliminaron: docs/01 prohíbe el glow y los gradientes SaaS. */}
       <section className="grain relative flex min-h-screen flex-col justify-between overflow-hidden bg-forest text-leche">
-        {/* resplandor del amanecer */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute bottom-[-20vh] left-1/2 h-[80vh] w-[120vw] -translate-x-1/2 rounded-[100%] bg-terracota/30 blur-[110px]" />
-          <div className="absolute bottom-0 left-1/3 h-[45vh] w-[45vh] rounded-full bg-mustard/25 blur-[100px]" />
-        </div>
-
         {/* contenido principal */}
         <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 items-center gap-10 px-5 pb-16 pt-32 sm:px-8 lg:grid-cols-12 lg:gap-6">
           {/* texto — izquierda */}
@@ -84,7 +80,7 @@ export default function Home() {
             >
               <Link
                 href="/menu"
-                className="group inline-flex items-center gap-3 rounded-full bg-terracota px-8 py-4 text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.04] hover:bg-mustard"
+                className="group inline-flex items-center gap-3 btn-pill bg-terracota px-8 py-4 text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.04] hover:bg-mustard"
               >
                 {lang === "es" ? "Ver el menú" : "View the menu"}
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -138,7 +134,7 @@ export default function Home() {
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 text-xs tracking-widest text-leche/60 sm:px-8">
             <span className="uppercase">{SITE.address.split(",")[0]}</span>
             <span className="hidden items-center gap-2 sm:flex">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-matcha" />
+              <span className="inline-block h-1.5 w-1.5 dot-circle bg-matcha" />
               {SITE.hours}
             </span>
             <span className="flex items-center gap-2 uppercase">
@@ -221,13 +217,14 @@ export default function Home() {
             <Reveal className="lg:col-span-7">
               <Link href="/menu#cafes" className="group relative block overflow-hidden rounded-[2rem]">
                 <Image
-                  src="/brand/fotos/Siembra Iced Coffee Promo.webp"
+                  src="/brand/fotos/siembra-iced-coffee-promo.webp"
                   alt="Café de Siembra"
                   width={900}
                   height={1100}
                   className="h-[480px] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 sm:h-[560px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-espresso via-espresso/25 to-transparent" />
+                {/* Velo plano para legibilidad. Sin gradiente: docs/01. */}
+                <div className="absolute inset-0 bg-espresso/45" />
                 {/* vapor sobre la taza */}
                 <div className="absolute left-10 top-8 text-leche/80">
                   <Steam className="h-14 w-10" />
@@ -251,13 +248,14 @@ export default function Home() {
             <Reveal delay={0.15} className="lg:col-span-5 lg:mt-20">
               <Link href="/menu#matcha" className="group relative block overflow-hidden rounded-[2rem]">
                 <Image
-                  src="/brand/fotos/Siembra Matcha Latte Promo.webp"
+                  src="/brand/fotos/siembra-matcha-latte-promo.webp"
                   alt="Matcha de Siembra"
                   width={800}
                   height={1000}
                   className="h-[420px] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 sm:h-[480px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/25 to-transparent" />
+                {/* Velo plano para legibilidad. Sin gradiente: docs/01. */}
+                <div className="absolute inset-0 bg-forest/45" />
                 <div className="absolute bottom-0 w-full p-8 sm:p-10">
                   <p className="text-xs font-bold uppercase tracking-[0.3em] text-teatree">
                     {lang === "es" ? "Barra de matcha" : "Matcha bar"}
@@ -319,7 +317,7 @@ export default function Home() {
             <Reveal delay={0.2} className="mt-8">
               <Link
                 href="/menu#piel"
-                className="group inline-flex items-center gap-3 rounded-full bg-olive px-7 py-3.5 text-sm font-bold uppercase tracking-widest text-leche transition-all hover:scale-[1.03] hover:bg-forest"
+                className="group inline-flex items-center gap-3 btn-pill bg-olive px-7 py-3.5 text-sm font-bold uppercase tracking-widest text-leche transition-all hover:scale-[1.03] hover:bg-forest"
               >
                 {lang === "es" ? "Descubrir las mezclas" : "Discover the blends"}
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -330,10 +328,8 @@ export default function Home() {
           {/* imagen flotante */}
           <Reveal delay={0.15}>
             <div className="relative">
-              <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-matcha/40 blur-2xl" />
-              <div className="absolute -bottom-8 -right-4 h-32 w-32 rounded-full bg-terracota/30 blur-3xl" />
               <Image
-                src="/brand/elementos/Siembra Iced Matcha Splash.webp"
+                src="/brand/optimized/iced-matcha-splash.webp"
                 alt="Bebida refrescante de Siembra"
                 width={700}
                 height={700}
@@ -370,8 +366,8 @@ export default function Home() {
               <Reveal key={i} delay={i * 0.08}>
                 <div className="group relative pb-12 last:pb-0">
                   {/* punto en la línea */}
-                  <span className="absolute -left-[41px] top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-terracota bg-leche transition-all duration-300 group-hover:scale-125 group-hover:bg-terracota sm:-left-[57px]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-terracota transition-colors group-hover:bg-leche" />
+                  <span className="absolute -left-[41px] top-1.5 flex h-5 w-5 items-center justify-center dot-circle border-2 border-terracota bg-leche transition-all duration-300 group-hover:scale-125 group-hover:bg-terracota sm:-left-[57px]">
+                    <span className="h-1.5 w-1.5 dot-circle bg-terracota transition-colors group-hover:bg-leche" />
                   </span>
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-8">
                     <p className="w-24 shrink-0 font-display text-2xl font-medium text-terracota sm:text-3xl">
@@ -392,7 +388,7 @@ export default function Home() {
           <Reveal className="mt-12">
             <Link
               href="/experiencia"
-              className="group inline-flex items-center gap-3 rounded-full border-2 border-espresso/25 px-7 py-3.5 text-sm font-bold uppercase tracking-widest text-espresso transition-all hover:border-espresso hover:bg-espresso hover:text-leche"
+              className="group inline-flex items-center gap-3 btn-pill border-2 border-espresso/25 px-7 py-3.5 text-sm font-bold uppercase tracking-widest text-espresso transition-all hover:border-espresso hover:bg-espresso hover:text-leche"
             >
               {lang === "es" ? "Ver la experiencia completa" : "See the full experience"}
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -417,11 +413,6 @@ export default function Home() {
 
       {/* ═══════════ CLUB SIEMBRA (tarjeta 3D) ═══════════ */}
       <section id="club" className="grain relative overflow-hidden bg-forest py-28 text-leche">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -right-20 top-10 h-[50vh] w-[50vh] rounded-full bg-matcha/15 blur-[120px]" />
-          <div className="absolute -left-24 bottom-0 h-[40vh] w-[40vh] rounded-full bg-terracota/20 blur-[120px]" />
-        </div>
-
         <div className="relative mx-auto grid max-w-7xl items-center gap-16 px-5 sm:px-8 lg:grid-cols-2">
           {/* texto + beneficios */}
           <div>
@@ -460,7 +451,7 @@ export default function Home() {
           {/* tarjeta de membresía 3D */}
           <Reveal delay={0.15}>
             <TiltCard className="mx-auto w-full max-w-md">
-              <div className="grain relative overflow-hidden rounded-3xl bg-gradient-to-br from-avena via-leche to-mustard/70 p-8 text-espresso shadow-warm">
+              <div className="grain relative overflow-hidden rounded-lg bg-avena p-8 text-espresso shadow-warm">
                 {/* marca de agua sol */}
                 <div className="absolute -right-10 -top-10 opacity-[0.12]">
                   <SunBean size={240} color="#45200a" />
@@ -594,7 +585,7 @@ export default function Home() {
             </div>
             <Link
               href="/visitanos"
-              className="group mt-10 inline-flex items-center gap-3 rounded-full bg-terracota px-8 py-4 text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.04] hover:bg-mustard"
+              className="group mt-10 inline-flex items-center gap-3 btn-pill bg-terracota px-8 py-4 text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.04] hover:bg-mustard"
             >
               {lang === "es" ? "Cómo llegar" : "Get directions"}
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -604,13 +595,14 @@ export default function Home() {
           <Reveal delay={0.15}>
             <div className="group relative overflow-hidden rounded-[2rem]">
               <Image
-                src="/brand/fotos/Siembra Coffee & Matcha.webp"
+                src="/brand/fotos/siembra-coffee-y-matcha.webp"
                 alt="Siembra Cafe & Matcha Bar en Condado"
                 width={800}
                 height={800}
                 className="w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-espresso/60 to-transparent" />
+              {/* Velo plano para legibilidad. Sin gradiente: docs/01. */}
+              <div className="absolute inset-0 bg-espresso/45" />
               <div className="absolute bottom-6 left-6 text-avena">
                 <SunBean size={56} color="currentColor" />
               </div>

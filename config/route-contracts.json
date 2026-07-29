@@ -1,0 +1,28 @@
+{
+  "public": [
+    "/",
+    "/registro",
+    "/iniciar-sesion",
+    "/recuperar",
+    "/menu",
+    "/comunidad",
+    "/gift-cards"
+  ],
+  "authenticated": [
+    "/perfil",
+    "/perfil/editar",
+    "/perfil/pedidos",
+    "/perfil/favoritos",
+    "/perfil/eventos",
+    "/wallet",
+    "/wallet/canjear",
+    "/gift-cards/confirmacion"
+  ],
+  "admin": [
+    "/admin",
+    "/admin/usuarios",
+    "/admin/usuarios/[id]",
+    "/admin/gift-cards",
+    "/admin/auditoria"
+  ]
+}

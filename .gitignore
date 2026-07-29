@@ -39,3 +39,27 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# derivados generados por npm run assets
+/public/brand/optimized/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Material de marca que NO se versiona
+#
+# Este repositorio es público. El Brand Book, los archivos maestros editables
+# (.ai/.psd) y las presentaciones de negocio son propiedad del cliente y no
+# pueden publicarse. Además pesan cientos de MB, por encima del límite de GitHub.
+#
+# Deben existir EN DISCO para que `npm run validate:design` pase: cópialos desde
+# Siembra_Claude_Code_Design_Lock_Kit/ y Siembra Branding Oficial/.
+# Ver docs/11_ASSET_MANIFEST.md.
+# ─────────────────────────────────────────────────────────────────────────────
+/brand-reference/
+/design-references/*
+!/design-references/01-registro-reference.png
+!/design-references/02-perfil-reference.png
+!/design-references/03-wallet-giftcards-reference.png
+!/design-references/04-home-brand-direction-reference.png
+
+# capturas de revisión por fase
+/evidencia/

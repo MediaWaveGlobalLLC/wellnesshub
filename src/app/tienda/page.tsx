@@ -9,22 +9,22 @@ import { SITE } from "@/lib/site";
 /* Productos de merchandising fotografiados en el branding oficial (sin e-commerce aún) */
 const PRODUCTOS = [
   {
-    img: "/brand/fotos/Siembra Bag Tote Cup Mockup.webp",
+    img: "/brand/fotos/siembra-bag-tote-cup-mockup.webp",
     nombre: { es: "Tote & Vaso", en: "Tote & Cup" },
     desc: { es: "Bolsa reutilizable y vaso de la casa", en: "Reusable tote and house cup" },
   },
   {
-    img: "/brand/fotos/Siembra T-shirt and Matcha Mockup.webp",
+    img: "/brand/fotos/siembra-t-shirt-and-matcha-mockup.webp",
     nombre: { es: "Camiseta Siembra", en: "Siembra T-shirt" },
     desc: { es: "Algodón orgánico con el isotipo solar", en: "Organic cotton with the solar mark" },
   },
   {
-    img: "/brand/fotos/Siembra Tote Cups Mug Napkins Promo.webp",
+    img: "/brand/fotos/siembra-tote-cups-mug-napkins-promo.webp",
     nombre: { es: "Colección para llevar", en: "To-go collection" },
     desc: { es: "Taza, vaso y servilletas de la marca", en: "Mug, cup and branded napkins" },
   },
   {
-    img: "/brand/fotos/Siembra Bag Napkins Menu Promo.webp",
+    img: "/brand/fotos/siembra-bag-napkins-menu-promo.webp",
     nombre: { es: "Bolsa & Menú", en: "Bag & Menu" },
     desc: { es: "Empaque y detalles de la experiencia", en: "Packaging and experience details" },
   },
@@ -50,7 +50,7 @@ export default function TiendaPage() {
           <div className="grid gap-6 sm:grid-cols-2">
             {PRODUCTOS.map((p, i) => (
               <Reveal key={i} delay={(i % 2) * 0.1}>
-                <div className="group overflow-hidden rounded-3xl border border-espresso/10 bg-white/50">
+                <div className="group overflow-hidden rounded-lg border border-espresso/10 bg-white/50">
                   <div className="relative overflow-hidden">
                     <Image
                       src={p.img}
@@ -88,7 +88,7 @@ export default function TiendaPage() {
                 href={SITE.mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full bg-leche px-8 py-3.5 text-sm font-bold uppercase tracking-widest text-terracota transition-all hover:scale-[1.03]"
+                className="btn-pill bg-leche px-8 py-3.5 text-sm font-bold uppercase tracking-widest text-terracota transition-all hover:scale-[1.03]"
               >
                 {lang === "es" ? "Cómo llegar" : "Get directions"}
               </a>
@@ -96,7 +96,7 @@ export default function TiendaPage() {
                 href={SITE.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full border-1.5 border-leche/60 px-8 py-3.5 text-sm font-bold uppercase tracking-widest text-leche transition-all hover:bg-leche/10"
+                className="btn-pill border-1.5 border-leche/60 px-8 py-3.5 text-sm font-bold uppercase tracking-widest text-leche transition-all hover:bg-leche/10"
               >
                 {SITE.instagram}
               </a>

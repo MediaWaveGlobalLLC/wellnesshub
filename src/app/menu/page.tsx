@@ -44,12 +44,12 @@ export default function MenuPage() {
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           {/* Toggle Hoy / Próximamente */}
           <div className="mb-12 flex justify-center">
-            <div className="inline-flex rounded-full border border-espresso/15 bg-white/60 p-1.5">
+            <div className="inline-flex btn-pill border border-espresso/15 bg-white/60 p-1.5">
               {(["hoy", "pronto"] as const).map((key) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className={`rounded-full px-6 py-2.5 text-sm font-bold uppercase tracking-widest transition-all ${
+                  className={`btn-pill px-6 py-2.5 text-sm font-bold uppercase tracking-widest transition-all ${
                     tab === key
                       ? "bg-terracota text-leche shadow-soft"
                       : "text-espresso/60 hover:text-espresso"
@@ -76,7 +76,7 @@ export default function MenuPage() {
                 <Reveal key={section.id} delay={i * 0.06}>
                   <div
                     id={section.id}
-                    className={`h-full scroll-mt-28 rounded-3xl border border-espresso/10 p-7 ${MUNDO_BG[section.mundo]}`}
+                    className={`h-full scroll-mt-28 rounded-lg border border-espresso/10 p-7 ${MUNDO_BG[section.mundo]}`}
                   >
                     {/* Encabezado de sección */}
                     <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-espresso/15 pb-4">

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: "Siembra Cafe",
     locale: "es_PR",
     type: "website",
-    images: [{ url: "/brand/fotos/Siembra Promo Square.webp", width: 1080, height: 1080 }],
+    images: [{ url: "/brand/fotos/siembra-promo-square.webp", width: 1080, height: 1080 }],
   },
   twitter: {
     card: "summary_large_image",
@@ -37,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={`${fontClassNames} antialiased`}>
+    <html lang="es" className={fontClassNames} suppressHydrationWarning>
+      <body className="antialiased">
         <Providers>
           <Header />
           <main>{children}</main>
