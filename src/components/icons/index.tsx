@@ -191,6 +191,30 @@ export const BellIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** Sobre — campo de correo electrónico (mockup 01). */
+export const MailIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2.6" y="5.2" width="18.8" height="13.6" rx="2" />
+    <path d="M3.4 6.6 12 12.8l8.6-6.2" />
+  </Icon>
+);
+
+/** Auricular — campo de teléfono (mockup 01). */
+export const PhoneIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M7.6 3.4H5.2a1.8 1.8 0 0 0-1.8 2c.5 4.3 2.3 8.1 5.2 11s6.7 4.7 11 5.2a1.8 1.8 0 0 0 2-1.8v-2.4a1.5 1.5 0 0 0-1.3-1.5 12 12 0 0 1-2.6-.6 1.5 1.5 0 0 0-1.6.35l-1 1a15.4 15.4 0 0 1-6.15-6.15l1-1a1.5 1.5 0 0 0 .35-1.6 12 12 0 0 1-.6-2.6 1.5 1.5 0 0 0-1.5-1.3Z" />
+  </Icon>
+);
+
+/** Candado — campos de contraseña (mockup 01). */
+export const LockIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="4.2" y="10.2" width="15.6" height="10.6" rx="2" />
+    <path d="M7.8 10.2V7.4a4.2 4.2 0 0 1 8.4 0v2.8" />
+    <circle cx="12" cy="15.5" r="1.15" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
 /** Índice para la página interna /_design y para render dinámico. */
 export const ICONS = {
   leaf: LeafIcon,
@@ -209,6 +233,9 @@ export const ICONS = {
   bag: BagIcon,
   heart: HeartIcon,
   bell: BellIcon,
+  mail: MailIcon,
+  phone: PhoneIcon,
+  lock: LockIcon,
 } as const;
 
 export type IconName = keyof typeof ICONS;

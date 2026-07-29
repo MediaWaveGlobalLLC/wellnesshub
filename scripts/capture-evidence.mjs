@@ -14,10 +14,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const baseUrl = process.argv[2] ?? 'http://localhost:3000';
-const outDir = path.join(process.cwd(), 'evidencia', 'fase-1');
+const fase = process.env.FASE ?? '1';
+const outDir = path.join(process.cwd(), 'evidencia', `fase-${fase}`);
 fs.mkdirSync(outDir, { recursive: true });
 
-const RUTAS = ['/design-system', '/', '/menu', '/visitanos'];
+const RUTAS_POR_FASE = {
+  1: ['/design-system', '/', '/menu', '/visitanos'],
+  2: ['/registro', '/iniciar-sesion', '/recuperar', '/registro/confirmar'],
+};
+const RUTAS = RUTAS_POR_FASE[fase] ?? RUTAS_POR_FASE[1];
 const VIEWPORTS = [
   { label: 'desktop', width: 1440, height: 1000 },
   { label: 'mobile', width: 390, height: 844 },

@@ -9,7 +9,7 @@ import { useLang } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
 import { NAV_PRINCIPAL, navVisible } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
-import { BagIcon } from "@/components/icons";
+import { BagIcon, UserIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 
 /**
@@ -103,6 +103,18 @@ export function Header() {
             className="btn-pill hidden items-center bg-terracota px-5 text-[12px] font-bold uppercase tracking-[0.08em] text-leche transition-colors hover:bg-primary-hover sm:inline-flex"
           >
             {lang === "es" ? "Ordena online" : "Order online"}
+          </Link>
+
+          {/* "Cuenta" del mockup 01. En Fase 3 apuntará a /perfil cuando haya sesión. */}
+          <Link
+            href="/iniciar-sesion"
+            aria-label={lang === "es" ? "Cuenta" : "Account"}
+            className={cn(
+              "hidden p-2 transition-colors sm:block",
+              sobreHeroOscuro ? "text-leche hover:text-avena" : "text-espresso hover:text-terracota"
+            )}
+          >
+            <UserIcon size={20} />
           </Link>
 
           <Link
