@@ -13,9 +13,8 @@ import { WalletIcon, GiftIcon, StarIcon, LeafIcon, CupIcon } from "@/components/
 /**
  * /wallet — módulo de créditos del mockup 03.
  *
- * Saldo real e historial del ledger. El canje de códigos llega en la Fase 5
- * junto con el resto del ciclo de gift cards (hash, atomicidad y rate limit);
- * hasta entonces no se enseña un campo que no haría nada.
+ * Saldo real e historial del ledger. El canje vive en `/wallet/canjear`, con su
+ * propio rate limit y su verificación por hash.
  *
  * El mockup rotula este bloque "Tus créditos" y en el perfil mezcla puntos con
  * dinero ("1 punto = $0.10"). Aquí solo hay dinero de tienda: `docs/00` separa
@@ -133,11 +132,21 @@ export default async function WalletPage() {
           </ul>
         </section>
 
-        {/* El canje llega en Fase 5; no se anuncia un campo que no funcionaría. */}
-        <p className="mt-10 flex items-center gap-2 text-sm text-text-muted">
-          <LeafIcon size={16} />
-          El canje de gift cards se activa junto con la tienda de tarjetas.
-        </p>
+        <div className="mt-10 flex flex-wrap items-center gap-4">
+          <Link
+            href="/wallet/canjear"
+            className="btn-pill inline-flex items-center bg-forest px-7 text-[0.75rem] font-bold uppercase tracking-[0.12em] text-avena transition-opacity hover:opacity-90"
+          >
+            <LeafIcon size={15} className="mr-2" />
+            Canjear un código
+          </Link>
+          <Link
+            href="/gift-cards"
+            className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-espresso underline decoration-terracota decoration-2 underline-offset-[6px]"
+          >
+            Comprar una gift card
+          </Link>
+        </div>
       </div>
     </div>
   );

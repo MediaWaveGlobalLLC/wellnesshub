@@ -25,14 +25,10 @@ afterEach(async () => {
 });
 
 const ajustarWallet = (actor: string, target: string, centavos: number, motivo: string, ref?: string) =>
-  db.query("select * from public.admin_ajustar_wallet($1,$2,$3,$4,$5,$6)", [
-    actor,
-    target,
-    centavos,
-    motivo,
-    ref ?? null,
-    "req-test",
-  ]);
+  db.query<{ transaction_id: string; new_balance_cents: string }>(
+    "select * from public.admin_ajustar_wallet($1,$2,$3,$4,$5,$6)",
+    [actor, target, centavos, motivo, ref ?? null, "req-test"]
+  );
 
 describe("autorización", () => {
   it("rechaza a quien no está en admin_users", async () => {
@@ -86,8 +82,8 @@ describe("ajuste de saldo", () => {
     const log = await db.query<{
       action: string;
       reason: string;
-      before_data: { balance_cents: number };
-      after_data: { balance_cents: number; amount_cents: number };
+      before_data: Record<string, number>;
+      after_data: Record<string, number>;
       actor_user_id: string;
       target_user_id: string;
       request_id: string;

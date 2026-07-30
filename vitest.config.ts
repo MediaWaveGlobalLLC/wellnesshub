@@ -5,7 +5,17 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { "@": path.resolve(import.meta.dirname, "./src") },
+    alias: {
+      "@": path.resolve(import.meta.dirname, "./src"),
+      /*
+       * `server-only` es un centinela que Next resuelve en el build para hacer
+       * fallar la compilación si un componente cliente importa código de
+       * servidor. Fuera de Next no existe, así que se apunta a un módulo vacío:
+       * la protección sigue actuando donde importa —al construir— y aquí no
+       * impide probar la lógica.
+       */
+      "server-only": path.resolve(import.meta.dirname, "./tests/stubs/server-only.ts"),
+    },
   },
   test: {
     environment: "jsdom",
