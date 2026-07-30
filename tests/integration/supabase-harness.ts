@@ -140,6 +140,23 @@ export async function crearUsuario(
 }
 
 /**
+ * Puntos con los que nace una cuenta — el bono de bienvenida de `0018`.
+ *
+ * Se LEE de `loyalty_rules` en vez de escribir 100 en cada test. El bono es
+ * configurable desde el panel a propósito, así que el día que el negocio lo
+ * cambie a 250 no puede romper media suite: lo que los tests comprueban es la
+ * relación entre el saldo y lo que se sumó, no una cifra concreta.
+ *
+ * Devuelve 0 si la regla está desactivada, que es lo que pasaría de verdad.
+ */
+export async function bonoBienvenida(db: Db): Promise<number> {
+  const r = await db.query<{ points: string }>(
+    "select points from public.loyalty_rules where key = 'bienvenida' and active"
+  );
+  return r.rows.length > 0 ? Number(r.rows[0]!.points) : 0;
+}
+
+/**
  * Lectura que ignora la caché de sentencias de PGlite.
  *
  * PGlite reutiliza el resultado de una consulta parametrizada idéntica dentro de

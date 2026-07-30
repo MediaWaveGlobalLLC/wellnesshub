@@ -34,8 +34,10 @@
     "/admin/usuarios",
     "/admin/usuarios/[id]",
     "/admin/gift-cards",
+    "/admin/lealtad",
     "/admin/newsletter",
     "/admin/equipo",
-    "/admin/auditoria"
+    "/admin/auditoria",
+    "/admin/salud"
   ]
 }

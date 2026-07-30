@@ -18,7 +18,7 @@
  * un mismo proceso, no en el esquema. Aislarlo aquí lo hace determinista.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { crearBase, crearUsuario, type Db } from "./supabase-harness";
+import { bonoBienvenida, crearBase, crearUsuario, type Db } from "./supabase-harness";
 
 let db: Db;
 
@@ -61,9 +61,16 @@ describe("nivel derivado de los puntos", () => {
   it("la vista refleja el saldo real de la cuenta", async () => {
     const id = await crearUsuario(db, { email: "nivel@example.com" });
 
+    /*
+      Desde `0018` una cuenta nace con el bono de bienvenida, así que se suma lo
+      que falta para llegar a 750 en vez de sumar 750 a ciegas. Lo que se está
+      probando es que la vista dice el saldo REAL, no una cifra concreta.
+    */
+    const bono = await bonoBienvenida(db);
+
     await db.query("select * from public.apply_loyalty_transaction($1,$2,$3,$4)", [
       id,
-      750,
+      750 - bono,
       "earn",
       "sube-a-brote",
     ]);
@@ -80,10 +87,11 @@ describe("nivel derivado de los puntos", () => {
 
   it("baja de nivel al canjear puntos", async () => {
     const id = await crearUsuario(db, { email: "baja@example.com" });
+    const bono = await bonoBienvenida(db);
 
     await db.query("select * from public.apply_loyalty_transaction($1,$2,$3,$4)", [
       id,
-      2000,
+      2000 - bono,
       "earn",
       "sube",
     ]);

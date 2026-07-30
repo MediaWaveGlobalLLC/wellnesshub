@@ -5,8 +5,10 @@ import { notFound, redirect } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
 import { AjusteForm } from "@/components/admin/AjusteForm";
+import { BotonesRegla } from "@/components/admin/lealtad/BotonesRegla";
 import { actorPuede, exigirAdmin } from "@/lib/services/admin-service";
 import { obtenerFicha, type Movimiento } from "@/lib/services/admin-consultas";
+import { listarReglas } from "@/lib/services/lealtad-admin";
 import { usuarioIdSchema } from "@/lib/validation/admin";
 import { formatearDolares, formatearPuntos } from "@/lib/loyalty";
 import { formatearTelefono } from "@/lib/telefono";
@@ -93,14 +95,22 @@ export default async function FichaUsuarioPage({
   */
   if (!usuarioIdSchema.safeParse(id).success) notFound();
 
-  const ficha = await obtenerFicha(id);
-  if (!ficha) notFound();
-
   // El mostrador ve el saldo actual —lo necesita para responder «¿cuánto
   // tengo?»— pero no el historial de movimientos, que dice dónde y cuándo
   // gasta una persona.
   const verLedger = actorPuede(actor, "ver_ledger");
   const puedeAjustar = actorPuede(actor, "ajustar_saldo");
+  const puedeAplicar = actorPuede(actor, "aplicar_regla");
+
+  const [ficha, reglas] = await Promise.all([
+    obtenerFicha(id),
+    // Solo las que se pueden dar a mano: las automáticas ya las da el sistema y
+    // darlas otra vez duplicaría el bono.
+    puedeAplicar ? listarReglas() : Promise.resolve([]),
+  ]);
+  if (!ficha) notFound();
+
+  const manuales = reglas.filter((r) => r.aplicacion === "manual" && r.activa);
 
   return (
     <>
@@ -145,6 +155,18 @@ export default async function FichaUsuarioPage({
           </div>
         </div>
       </Card>
+
+      {puedeAplicar && (
+        <Card className="mt-6 p-6">
+          <h3 className="font-display text-lg text-espresso">Dar puntos de una regla</h3>
+          <p className="mt-1 text-sm leading-relaxed text-text-muted">
+            Los puntos los pone la regla, no tú. Queda en la auditoría con el concepto.
+          </p>
+          <div className="mt-5">
+            <BotonesRegla userId={ficha.id} reglas={manuales} />
+          </div>
+        </Card>
+      )}
 
       {puedeAjustar && (
         <div className="mt-6 grid gap-5 lg:grid-cols-2">

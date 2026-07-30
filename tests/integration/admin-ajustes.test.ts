@@ -7,7 +7,13 @@
  * después, y que repetir la misma referencia no duplique el movimiento.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { comoUsuario, crearBase, crearUsuario, type Db } from "./supabase-harness";
+import {
+  bonoBienvenida,
+  comoUsuario,
+  crearBase,
+  crearUsuario,
+  type Db,
+} from "./supabase-harness";
 
 let db: Db;
 let admin: string;
@@ -162,7 +168,12 @@ describe("ajuste de puntos", () => {
         where l.user_id = $1`,
       [cliente]
     );
-    expect(r.rows[0]).toEqual({ puntos: "500", centavos: "0" });
+    // Los 500 se suman SOBRE el bono de bienvenida (`0018`), y el crédito no se
+    // mueve: es la separación entre puntos y dinero lo que se está probando.
+    expect(r.rows[0]).toEqual({
+      puntos: String((await bonoBienvenida(db)) + 500),
+      centavos: "0",
+    });
   });
 
   it("registra la acción como points_adjustment", async () => {
@@ -181,11 +192,15 @@ describe("ajuste de puntos", () => {
   });
 
   it("rechaza dejar los puntos en negativo", async () => {
+    // Un punto más de lo que tiene. Con el bono de bienvenida, restar cien ya
+    // no llegaba a negativo y este test pasaba sin probar nada.
+    const excesivo = -((await bonoBienvenida(db)) + 1);
+
     await expect(
       db.query("select * from public.admin_ajustar_puntos($1,$2,$3,$4,$5,$6)", [
         admin,
         cliente,
-        -100,
+        excesivo,
         "Resta sin saldo",
         "T-NEG",
         "req-test",

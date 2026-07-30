@@ -147,3 +147,53 @@ export const revocarAdminSchema = z.object({
   userId: z.string().uuid(),
   reason: motivo,
 });
+
+/* ── Lealtad ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Puntos de una regla o umbral de un nivel.
+ *
+ * El tope de 100.000 no es una regla de negocio: es el mismo freno que tiene la
+ * columna en la base (`0018`). El bono de bienvenida se lo lleva cada cuenta
+ * nueva, y un dedo torpe escribiendo un cero de más lo reparte a todo el que se
+ * registre a partir de ese momento. Los movimientos de lealtad son inmutables,
+ * así que deshacerlo son mil correcciones, no un `update`.
+ */
+const puntosRegla = z
+  .string()
+  .trim()
+  .min(1, "Escribe cuántos puntos.")
+  .refine((v) => /^\d+$/.test(v), "Solo números enteros.")
+  .transform((v) => Number(v))
+  .refine((n) => n > 0 && n <= 100_000, "Entre 1 y 100.000.");
+
+export const editarReglaSchema = z.object({
+  // La clave es del catálogo de reglas, no un uuid: `por_dolar`, `bebida`…
+  clave: z.string().trim().regex(/^[a-z_]{3,40}$/, "Regla no válida."),
+  puntos: puntosRegla,
+  etiqueta: z.string().trim().min(3, "Mínimo tres caracteres.").max(80, "Demasiado larga."),
+  activa: z.boolean(),
+  reason: motivo,
+});
+
+export const editarNivelSchema = z.object({
+  clave: z.enum(["semilla", "brote", "raiz", "florecer"]),
+  etiqueta: z.string().trim().min(3, "Mínimo tres caracteres.").max(40, "Demasiado larga."),
+  // Aquí sí se acepta el cero: el primer nivel TIENE que empezar en cero, o
+  // habría gente sin ningún nivel.
+  minimo: z
+    .string()
+    .trim()
+    .min(1, "Escribe el mínimo.")
+    .refine((v) => /^\d+$/.test(v), "Solo números enteros.")
+    .transform((v) => Number(v))
+    .refine((n) => n <= 1_000_000, "Demasiado alto."),
+  descripcion: z.string().trim().max(200, "Demasiado larga.").optional(),
+  reason: motivo,
+});
+
+/** Aplicar una regla manual. Sin importe ni motivo: los pone la regla. */
+export const aplicarReglaSchema = z.object({
+  userId: z.string().uuid(),
+  clave: z.string().trim().regex(/^[a-z_]{3,40}$/, "Regla no válida."),
+});

@@ -9,11 +9,14 @@ import { nuevoRequestId } from "@/lib/api/respuesta";
 import { generarCodigo, hashCodigo, pepperConfigurado } from "@/lib/gift-cards/codigo";
 import {
   anularGiftCardSchema,
+  aplicarReglaSchema,
   asistenciaSchema,
   borrarEventoSchema,
   concederAdminSchema,
   crearEventoSchema,
   editarEventoSchema,
+  editarNivelSchema,
+  editarReglaSchema,
   publicarEventoSchema,
   reactivarGiftCardSchema,
   revocarAdminSchema,
@@ -86,6 +89,25 @@ function traducir(mensaje: string): string {
     [
       "ultima_duena",
       "No puedes dejar el negocio sin ninguna dueña: nadie podría volver a entrar al panel.",
+    ],
+    // Lealtad.
+    ["regla_no_encontrada", "Esa regla ya no existe."],
+    ["regla_inactiva", "Esa regla está desactivada."],
+    [
+      "regla_no_manual",
+      "Esa regla no se da a mano: o la aplica el sistema sola, o todavía no se puede aplicar.",
+    ],
+    ["nivel_no_encontrado", "Ese nivel ya no existe."],
+    ["puntos_invalidos", "Los puntos tienen que estar entre 1 y 100.000."],
+    ["minimo_invalido", "El mínimo no puede ser negativo."],
+    ["etiqueta_obligatoria", "El nombre es obligatorio."],
+    [
+      "umbrales_desordenados",
+      "Cada nivel tiene que pedir más puntos que el anterior. Con este cambio quedarían cruzados y el nivel de todo el mundo se calcularía mal.",
+    ],
+    [
+      "primer_nivel_no_empieza_en_cero",
+      "El primer nivel tiene que empezar en 0: si no, quien tenga pocos puntos se quedaría sin ningún nivel.",
     ],
   ];
   for (const [clave, texto] of mapa) {
@@ -414,6 +436,102 @@ export async function concederAdmin(datos: unknown): Promise<Resultado> {
       ? `${persona.nombre} pasa a ${etiqueta}.`
       : `${persona.nombre} entra al equipo como ${etiqueta}.`,
   };
+}
+
+/* ── Lealtad ─────────────────────────────────────────────────────────────── */
+
+export async function editarRegla(datos: unknown): Promise<Resultado> {
+  const parsed = editarReglaSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_lealtad_regla_editar", {
+    p_actor_id: ctx.actor.id,
+    p_clave: parsed.data.clave,
+    p_puntos: parsed.data.puntos,
+    p_etiqueta: parsed.data.etiqueta,
+    p_activa: parsed.data.activa,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidarLealtad();
+  return { ok: true, mensaje: "Regla actualizada." };
+}
+
+export async function editarNivel(datos: unknown): Promise<Resultado> {
+  const parsed = editarNivelSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_lealtad_nivel_editar", {
+    p_actor_id: ctx.actor.id,
+    p_clave: parsed.data.clave,
+    p_etiqueta: parsed.data.etiqueta,
+    p_minimo: parsed.data.minimo,
+    p_descripcion: parsed.data.descripcion ?? null,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidarLealtad();
+  return {
+    ok: true,
+    mensaje: "Nivel actualizado. El nivel de cada persona se recalcula solo, sin tocar sus puntos.",
+  };
+}
+
+/**
+ * Dar los puntos de una regla manual a alguien. Lo puede hacer el mostrador.
+ *
+ * No admite ni importe ni motivo: los pone la regla. Un empleado no puede
+ * regalar mil puntos porque no hay ningún campo donde escribir mil.
+ */
+export async function aplicarRegla(datos: unknown): Promise<Resultado> {
+  const parsed = aplicarReglaSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(false);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  if (!actorPuede(ctx.actor, "aplicar_regla")) {
+    return { ok: false, error: "No tienes permisos para esta operación." };
+  }
+
+  const { data, error } = await crearClienteServicio().rpc("admin_aplicar_regla_lealtad", {
+    p_actor_id: ctx.actor.id,
+    p_target_id: parsed.data.userId,
+    p_clave: parsed.data.clave,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidatePath(`/admin/usuarios/${parsed.data.userId}`);
+
+  const fila = Array.isArray(data) ? data[0] : null;
+  const puntos = Number(fila?.puntos ?? 0);
+  const saldo = Number(fila?.nuevo_saldo ?? 0);
+
+  return { ok: true, mensaje: `+${puntos} puntos. Ahora tiene ${saldo}.` };
+}
+
+/**
+ * `/perfil` pinta el nivel y el progreso desde `loyalty_tiers`, así que cambiar
+ * un umbral tiene que refrescarlo. Sin esto, la dueña baja el mínimo de Brote,
+ * va a mirar un perfil y sigue viendo el nivel viejo.
+ */
+function revalidarLealtad() {
+  revalidatePath("/admin/lealtad");
+  revalidatePath("/perfil");
 }
 
 export async function revocarAdmin(datos: unknown): Promise<Resultado> {

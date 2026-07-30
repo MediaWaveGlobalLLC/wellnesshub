@@ -31,6 +31,10 @@ export type Permiso =
   | "gestionar_eventos"
   | "marcar_asistencia"
   | "ver_newsletter"
+  | "ver_lealtad"
+  | "configurar_lealtad"
+  | "aplicar_regla"
+  | "ver_salud"
   | "gestionar_admins";
 
 const MATRIZ: Record<Permiso, readonly Rol[]> = {
@@ -63,6 +67,23 @@ const MATRIZ: Record<Permiso, readonly Rol[]> = {
   // Una lista de correos es un fichero de datos personales, no una herramienta
   // de mostrador.
   ver_newsletter: ["duena"],
+  /*
+    Lealtad, también en dos.
+
+    Cambiar cuántos puntos vale algo es una decisión de negocio. Pero DAR los
+    cinco puntos del vaso reusable es de quien está en la barra viendo el vaso:
+    si hay que llamar a la dueña, esos puntos no se dan nunca y la regla vuelve
+    a ser decoración, que es de donde viene.
+
+    `aplicar_regla` no es un cheque en blanco: los puntos salen de la tabla, no
+    de un campo. Regalar una cantidad arbitraria sigue siendo `ajustar_saldo`.
+  */
+  ver_lealtad: ["duena", "empleado"],
+  configurar_lealtad: ["duena"],
+  aplicar_regla: ["duena", "empleado"],
+  // La salud técnica lleva identificadores de eventos de Stripe y quién está
+  // bloqueado. No es información de barra.
+  ver_salud: ["duena"],
   gestionar_admins: ["duena"],
 };
 
