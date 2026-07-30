@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "framer-motion";
 
 /*
   Número que cuenta hacia arriba cuando entra en pantalla.
-  Usa requestAnimationFrame con easing para un conteo fluido.
+
+  El valor final se renderiza desde el principio y solo se sustituye por la
+  cuenta si el navegador puede animarla. Antes usaba `useInView` de
+  framer-motion, que nunca reportaba visibilidad, así que las tres métricas de
+  la home se quedaban en "0+" de forma permanente.
 */
 export function CountUp({
   value,
@@ -19,27 +22,45 @@ export function CountUp({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
-  const [display, setDisplay] = useState(0);
+  // Arranca en el valor final: si el efecto no corre, el dato es correcto.
+  const [mostrado, setMostrado] = useState(value);
 
   useEffect(() => {
-    if (!inView) return;
-    let raf: number;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1);
-      // easeOutExpo
-      const eased = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
-      setDisplay(Math.round(eased * value));
-      if (p < 1) raf = requestAnimationFrame(tick);
+    const nodo = ref.current;
+    if (!nodo || typeof IntersectionObserver === "undefined") return;
+
+    const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducido) return;
+
+    let raf = 0;
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (!entrada.isIntersecting) return;
+        observador.disconnect();
+
+        const inicio = performance.now();
+        const paso = (ahora: number) => {
+          const p = Math.min((ahora - inicio) / duration, 1);
+          const suavizado = p === 1 ? 1 : 1 - Math.pow(2, -10 * p); // easeOutExpo
+          setMostrado(Math.round(suavizado * value));
+          if (p < 1) raf = requestAnimationFrame(paso);
+        };
+        setMostrado(0);
+        raf = requestAnimationFrame(paso);
+      },
+      { rootMargin: "-40px" }
+    );
+
+    observador.observe(nodo);
+    return () => {
+      observador.disconnect();
+      cancelAnimationFrame(raf);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [inView, value, duration]);
+  }, [value, duration]);
 
   return (
     <span ref={ref} className={className}>
-      {display}
+      {mostrado}
       <span>{suffix}</span>
     </span>
   );

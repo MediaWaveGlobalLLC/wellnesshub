@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, ReactNode } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useRef, type ReactNode } from "react";
 
 /*
   Tarjeta con inclinación 3D que sigue al cursor.
@@ -10,39 +9,41 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
   El brillo radial que recorría la tarjeta se eliminó: docs/01 prohíbe gradientes
   y pide sombra «suave y cálida; nunca glow». La profundidad la aporta ahora la
   inclinación y --shadow-warm.
+
+  La inclinación se aplica escribiendo el transform directamente sobre el nodo,
+  sin framer-motion. Es un realce de puntero: si no se ejecuta, la tarjeta se ve
+  igual, plana. Con puntero grueso (táctil) no se activa.
 */
 export function TiltCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  const px = useMotionValue(0.5);
-  const py = useMotionValue(0.5);
+  const inclinar = (e: React.MouseEvent) => {
+    const nodo = ref.current;
+    if (!nodo || !window.matchMedia("(hover: hover)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const rotateX = useSpring(useTransform(py, [0, 1], [10, -10]), { stiffness: 180, damping: 20 });
-  const rotateY = useSpring(useTransform(px, [0, 1], [-12, 12]), { stiffness: 180, damping: 20 });
-
-  const onMove = (e: React.MouseEvent) => {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return;
-    px.set((e.clientX - rect.left) / rect.width);
-    py.set((e.clientY - rect.top) / rect.height);
+    const caja = nodo.getBoundingClientRect();
+    const x = (e.clientX - caja.left) / caja.width;
+    const y = (e.clientY - caja.top) / caja.height;
+    nodo.style.transform = `perspective(1100px) rotateX(${(0.5 - y) * 20}deg) rotateY(${(x - 0.5) * 24}deg)`;
   };
 
-  const onLeave = () => {
-    px.set(0.5);
-    py.set(0.5);
+  const reposar = () => {
+    const nodo = ref.current;
+    if (nodo) nodo.style.transform = "";
   };
 
   return (
-    <div style={{ perspective: 1100 }} className={className}>
-      <motion.div
+    <div className={className}>
+      <div
         ref={ref}
-        onMouseMove={onMove}
-        onMouseLeave={onLeave}
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        onMouseMove={inclinar}
+        onMouseLeave={reposar}
+        style={{ transformStyle: "preserve-3d", transition: "transform 220ms ease-out" }}
         className="relative"
       >
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 }

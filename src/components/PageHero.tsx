@@ -1,8 +1,10 @@
-"use client";
+/*
+  Encabezado estándar para páginas internas (fondo claro, abre bajo el header fijo).
 
-import { motion } from "framer-motion";
-
-/* Encabezado estándar para páginas internas (fondo claro, abre bajo el header fijo) */
+  Entrada con CSS y sin "use client": el texto se ve aunque no se ejecute nada.
+  Antes usaba framer-motion partiendo de opacidad 0, y como esa animación no
+  llegaba a correr, los títulos de todas las páginas internas quedaban en blanco.
+*/
 export function PageHero({
   eyebrow,
   title,
@@ -17,31 +19,16 @@ export function PageHero({
   return (
     <section className="grain relative overflow-hidden bg-leche pb-12 pt-36 sm:pt-40">
       <div className="relative mx-auto max-w-4xl px-6 text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-xs font-bold uppercase tracking-[0.3em] text-terracota"
-        >
+        <p className="entrada entrada-1 text-xs font-bold uppercase tracking-[0.3em] text-terracota">
           {eyebrow}
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.7 }}
-          className="mt-4 font-display text-5xl font-medium text-espresso sm:text-6xl"
-        >
+        </p>
+        <h1 className="entrada entrada-2 mt-4 font-display text-5xl font-medium text-espresso sm:text-6xl">
           {title}
-        </motion.h1>
+        </h1>
         {subtitle && (
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.7 }}
-            className="mx-auto mt-5 max-w-2xl font-serif text-lg italic text-espresso/70 sm:text-xl"
-          >
+          <p className="entrada entrada-3 mx-auto mt-5 max-w-2xl font-serif text-lg italic text-espresso/70 sm:text-xl">
             {subtitle}
-          </motion.p>
+          </p>
         )}
       </div>
     </section>

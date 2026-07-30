@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { useLang } from "@/lib/i18n";
 import { PageHero } from "@/components/PageHero";
 import { Reveal } from "@/components/Reveal";
@@ -63,15 +63,9 @@ export default function MenuPage() {
             </div>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.4 }}
-              className="grid gap-6 md:grid-cols-2"
-            >
+          {/* `key={tab}` remonta el bloque al cambiar de pestaña, así que la
+              animación de entrada de CSS se reproduce sola en cada cambio. */}
+          <div key={tab} className="entrada grid gap-6 md:grid-cols-2">
               {sections.map((section, i) => (
                 <Reveal key={section.id} delay={i * 0.06}>
                   <div
@@ -115,8 +109,7 @@ export default function MenuPage() {
                   </div>
                 </Reveal>
               ))}
-            </motion.div>
-          </AnimatePresence>
+          </div>
 
           {/* Nota */}
           <Reveal className="mt-14 text-center">

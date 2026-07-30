@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+
 import { useLang } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
 import { NAV_PRINCIPAL, navVisible } from "@/lib/nav";
@@ -145,24 +145,18 @@ export function Header() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.nav
-            id="menu-movil"
-            aria-label="Principal móvil"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden bg-leche lg:hidden"
-          >
+      {/* Render condicional simple. La versión anterior animaba la apertura con
+          framer-motion desde altura y opacidad cero; con esa animación sin
+          ejecutarse, el menú móvil se abría invisible. */}
+      {open && (
+        <nav
+          id="menu-movil"
+          aria-label="Principal móvil"
+          className="entrada overflow-hidden bg-leche lg:hidden"
+        >
             <div className="flex flex-col gap-1 px-6 pb-6 pt-2">
-              {items.map((item, i) => (
-                <motion.div
-                  key={item.href}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * i }}
-                >
+              {items.map((item) => (
+                <div key={item.href}>
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
@@ -170,7 +164,7 @@ export function Header() {
                   >
                     {t(item)}
                   </Link>
-                </motion.div>
+                </div>
               ))}
               <Link
                 href="/menu"
@@ -182,10 +176,9 @@ export function Header() {
               <p className="mt-4 text-center text-xs text-text-muted">
                 {SITE.hours} · {SITE.instagram}
               </p>
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
