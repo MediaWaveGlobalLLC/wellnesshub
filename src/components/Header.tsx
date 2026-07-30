@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { useLang } from "@/lib/i18n";
-import { SITE } from "@/lib/site";
+import { SITE, CLUB_OFERTA } from "@/lib/site";
 import { NAV_PRINCIPAL, navVisible } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { BagIcon, UserIcon } from "@/components/icons";
@@ -38,7 +38,10 @@ export function Header() {
   // Solo la home abre sobre un hero Forest. En el resto de las páginas el header
   // arranca sobre fondo Leche, así que el texto claro sería ilegible: se usa
   // Espresso aunque el header aún esté transparente.
-  const sobreHeroOscuro = pathname === "/" && !solid;
+  // Todas las páginas abren ahora sobre fondo Leche —la home incluida, desde que
+  // sigue el mockup 04—, así que el header usa Espresso incluso mientras es
+  // transparente. Antes alternaba a texto claro sobre el hero Forest.
+  const enHome = pathname === "/";
   const items = navVisible(NAV_PRINCIPAL);
 
   return (
@@ -48,10 +51,25 @@ export function Header() {
         solid ? "border-b border-espresso/10 bg-leche shadow-soft" : "bg-transparent"
       )}
     >
+      {/*
+        Barra de anuncio del mockup 04. Vive dentro del header porque este es
+        `fixed`: si se renderizara aparte, el header se montaría encima y taparía
+        tanto el anuncio como el propio logo.
+
+        Solo en la home: los mockups 01, 02 y 03 no la llevan.
+      */}
+      {enHome && (
+        <div className="bg-terracota text-center text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-leche">
+          <p className="mx-auto max-w-[var(--container-content)] px-5 py-2.5 sm:px-8">
+            Club SIEMBRA · {CLUB_OFERTA.es}
+          </p>
+        </div>
+      )}
+
       <div className="mx-auto flex max-w-[var(--container-content)] items-center justify-between px-5 py-3.5 sm:px-8">
         <Link href="/" className="flex items-center" aria-label="SIEMBRA — Inicio">
           <Image
-            src={sobreHeroOscuro ? BRAND_ASSETS.siembraLogoBlanco.src : BRAND_ASSETS.siembraLogoNegro.src}
+            src={BRAND_ASSETS.siembraLogoNegro.src}
             alt="SIEMBRA — Wellness Hub | Coffee &amp; Matcha Bar"
             width={140}
             height={44}
@@ -70,7 +88,7 @@ export function Header() {
                 aria-current={activo ? "page" : undefined}
                 className={cn(
                   "text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors",
-                  sobreHeroOscuro ? "text-leche" : "text-espresso",
+                  "text-espresso",
                   activo
                     ? "underline decoration-terracota decoration-2 underline-offset-[6px]"
                     : "hover:text-terracota"
@@ -87,9 +105,7 @@ export function Header() {
             onClick={() => setLang(lang === "es" ? "en" : "es")}
             className={cn(
               "btn-pill min-h-0 border-[1.5px] px-3 py-1 text-[11px] font-bold tracking-widest transition-colors",
-              sobreHeroOscuro
-                ? "border-leche/50 text-leche hover:border-leche"
-                : "border-espresso/40 text-espresso hover:border-espresso"
+              "border-espresso/40 text-espresso hover:border-espresso"
             )}
             aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
           >
@@ -111,7 +127,7 @@ export function Header() {
             aria-label={lang === "es" ? "Cuenta" : "Account"}
             className={cn(
               "hidden p-2 transition-colors sm:block",
-              sobreHeroOscuro ? "text-leche hover:text-avena" : "text-espresso hover:text-terracota"
+              "text-espresso hover:text-terracota"
             )}
           >
             <UserIcon size={20} />
@@ -122,7 +138,7 @@ export function Header() {
             aria-label={lang === "es" ? "Tienda" : "Shop"}
             className={cn(
               "hidden p-2 transition-colors sm:block",
-              sobreHeroOscuro ? "text-leche hover:text-avena" : "text-espresso hover:text-terracota"
+              "text-espresso hover:text-terracota"
             )}
           >
             <BagIcon size={20} />
@@ -132,7 +148,7 @@ export function Header() {
             onClick={() => setOpen(!open)}
             className={cn(
               "flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden",
-              sobreHeroOscuro ? "text-leche" : "text-espresso"
+              "text-espresso"
             )}
             aria-expanded={open}
             aria-controls="menu-movil"
