@@ -11,6 +11,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     // tests/visual pertenece a Playwright (npm run test:visual), no a Vitest.
-    include: ["tests/unit/**/*.test.{ts,tsx}"],
+    // tests/integration levanta Postgres en WASM y declara `environment: node`
+    // por archivo, con su propio timeout: arrancar la base tarda unos segundos.
+    include: ["tests/unit/**/*.test.{ts,tsx}", "tests/integration/**/*.test.ts"],
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });
