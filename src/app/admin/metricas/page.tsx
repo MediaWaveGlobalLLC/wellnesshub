@@ -5,15 +5,10 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
 import { GraficaBarras, GraficaLinea } from "@/components/admin/graficas/Grafica";
+import { SelectorRango } from "@/components/admin/SelectorRango";
 import { exigirDuena } from "@/lib/services/admin-service";
 import { obtenerResumen } from "@/lib/services/admin-consultas";
-import {
-  esRangoValido,
-  RANGOS,
-  seriesDe,
-  total,
-  type ClaveRango,
-} from "@/lib/services/metricas";
+import { esRangoValido, seriesDe, total, type ClaveRango } from "@/lib/services/metricas";
 import { formatearDolares, formatearPuntos } from "@/lib/loyalty";
 
 export const metadata: Metadata = {
@@ -90,23 +85,7 @@ export default async function MetricasPage({
           </p>
         </div>
 
-        {/* Selector por enlace: cada rango tiene su URL y se puede compartir. */}
-        <nav aria-label="Rango de fechas" className="flex flex-wrap gap-4">
-          {(Object.keys(RANGOS) as ClaveRango[]).map((r) => (
-            <Link
-              key={r}
-              href={r === "30d" ? "/admin/metricas" : `/admin/metricas?rango=${r}`}
-              aria-current={r === rango ? "page" : undefined}
-              className={
-                r === rango
-                  ? "text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-espresso underline decoration-terracota decoration-2 underline-offset-[6px]"
-                  : "text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-text-muted transition-colors hover:text-espresso"
-              }
-            >
-              {RANGOS[r].etiqueta}
-            </Link>
-          ))}
-        </nav>
+        <SelectorRango base="/admin/metricas" actual={rango} />
       </div>
 
       {!hayAlgo ? (
@@ -160,8 +139,9 @@ export default async function MetricasPage({
         </p>
         <p className="mt-2 text-sm leading-relaxed text-espresso/80">
           <strong>Las ventas del local no aparecen</strong> porque la web no está conectada al punto
-          de venta. Tampoco hay visitas todavía. Todo lo de arriba sale de lo que pasa en la web:
-          cuentas, crédito, gift cards y puntos.
+          de venta. Todo lo de arriba sale de lo que pasa en la web: cuentas, crédito, gift cards y
+          puntos, y son cosas que ocurren <em>después</em> de que alguien se registre. Quien entra,
+          mira la carta y se va está en <Link href="/admin/visitas">visitas</Link>.
         </p>
       </Card>
     </>

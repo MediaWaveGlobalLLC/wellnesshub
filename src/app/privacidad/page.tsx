@@ -16,6 +16,14 @@ import { SITE } from "@/lib/site";
  * PENDIENTE: no hay correo de contacto legal. Se usan el teléfono, Instagram y
  * la dirección física, que sí están verificados, antes que inventar un buzón al
  * que nadie respondería. En cuanto exista, se añade a `SITE` y se enlaza aquí.
+ *
+ * El recuento de visitas (`0016_analitica.sql`) se describe en la cláusula 2 y
+ * se aclara en la 5 y la 6. Las cláusulas 4 (encargados del tratamiento) y 5
+ * (cookies) NO cambian de fondo, y eso fue una condición de diseño, no una
+ * casualidad: se contó desde el propio servidor y en la propia base de datos
+ * precisamente para no tener que añadir un proveedor ni pedir consentimiento.
+ * Si algún día se sustituye por una herramienta de terceros, las tres cláusulas
+ * hay que reescribirlas y el banner de cookies pasa a ser obligatorio.
  */
 export const metadata: Metadata = {
   title: "Política de Privacidad",
@@ -77,6 +85,19 @@ export default function PrivacidadPage() {
           <strong>No recogemos datos de tarjeta.</strong> Los pagos ocurren íntegramente en Stripe;
           el número de tu tarjeta nunca pasa por nuestros servidores.
         </p>
+        <p>
+          <strong>Contamos las visitas a la web, de forma anónima y agrupada.</strong> Guardamos
+          tres cosas: qué página se abrió, en qué hora del día, y qué tipo de sitio te trajo aquí
+          (por ejemplo «Instagram» o «Google», nunca el enlace concreto). Nada más: ni tu dirección
+          IP, ni qué navegador usas, ni ningún identificador tuyo, ni siquiera si habías iniciado
+          sesión. Solo sumamos uno a un contador.
+        </p>
+        <p>
+          Eso significa que <strong>contamos visitas, no visitantes</strong>: no podemos saber si
+          dos visitas son de la misma persona, ni reconstruir por qué páginas pasaste, ni
+          relacionar nada de esto con tu cuenta. Nos sirve para saber si la carta se mira más por
+          la mañana o por la tarde, y no puede usarse para perfilarte.
+        </p>
       </Clausula>
 
       <Clausula titulo="3. Para qué los usamos">
@@ -127,12 +148,21 @@ export default function PrivacidadPage() {
           analítica, de publicidad ni de terceros, y por eso tampoco verás un banner pidiéndote
           permiso para instalarlas.
         </p>
+        <p>
+          El recuento de visitas de la sección 2 <strong>no usa cookies</strong> ni nada que se
+          guarde en tu navegador: ocurre entero en nuestro servidor y no deja rastro en tu equipo.
+          Tampoco lo hace ningún tercero: no cargamos scripts de analítica de nadie.
+        </p>
       </Clausula>
 
       <Clausula titulo="6. Cuánto tiempo los guardamos">
         <p>
           Los datos de tu cuenta, mientras la cuenta exista. Si la cierras, se eliminan tu perfil,
           tus favoritos, tus reservas y tus direcciones.
+        </p>
+        <p>
+          Los contadores de visitas se borran a los 400 días. No hace falta pedir su eliminación
+          porque no hay nada tuyo dentro: son solo números.
         </p>
         <p>
           Los movimientos de crédito y de puntos se conservan aunque cierres la cuenta, porque son

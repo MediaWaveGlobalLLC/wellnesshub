@@ -39,8 +39,14 @@ export function esRangoValido(v: string | undefined): v is ClaveRango {
   return v !== undefined && v in RANGOS;
 }
 
-/** Fechas en formato `YYYY-MM-DD`, que es lo que espera el parámetro `date`. */
-function ventana(dias: number): { desde: string; hasta: string } {
+/**
+ * Fechas en formato `YYYY-MM-DD`, que es lo que espera el parámetro `date`.
+ *
+ * Exportada porque el servicio de visitas usa los MISMOS rangos. Duplicar este
+ * cálculo es como acaban dos pantallas diciendo «últimos 30 días» y midiendo
+ * ventanas distintas.
+ */
+export function ventana(dias: number): { desde: string; hasta: string } {
   const hoy = new Date();
   const desde = new Date(hoy);
   desde.setDate(hoy.getDate() - (dias - 1));
@@ -54,7 +60,7 @@ const FORMATO_ETIQUETA: Record<Grano, Intl.DateTimeFormatOptions> = {
   mes: { month: "short", year: "2-digit" },
 };
 
-function etiquetar(iso: string, grano: Grano): string {
+export function etiquetar(iso: string, grano: Grano): string {
   return new Intl.DateTimeFormat("es-PR", {
     ...FORMATO_ETIQUETA[grano],
     timeZone: "America/Puerto_Rico",

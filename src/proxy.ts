@@ -1,16 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabaseConfigurado } from "@/lib/supabase/env";
 import { CABECERAS_ESTATICAS, construirCSP } from "@/lib/seguridad/cabeceras";
+import { decidirVisita } from "@/lib/analitica/clasificar";
+import { registrarVisita } from "@/lib/analitica/registrar";
 
 /**
  * Proxy de sesión — Next 16.
  *
  * En Next 16 el middleware se llama `proxy` y vive en `src/proxy.ts`.
  *
- * Hace DOS cosas y nada más:
+ * Hace TRES cosas y nada más:
  *  1. Refresca la cookie de sesión de Supabase para que no expire en navegación.
  *  2. Redirección optimista: manda a /iniciar-sesion a quien no tenga sesión.
+ *  3. Cuenta la visita, de forma anónima y sin bloquear la respuesta.
  *
  * La documentación de Next es explícita en que el proxy NO es una solución de
  * autorización. Y `docs/06` exige verificación server-side. Por eso cada página
@@ -39,7 +42,36 @@ function conSeguridad(respuesta: NextResponse, csp: string): NextResponse {
   return respuesta;
 }
 
-export async function proxy(request: NextRequest) {
+/**
+ * Cuenta la visita fuera del camino crítico.
+ *
+ * `event.waitUntil` mantiene viva la invocación hasta que la promesa acaba,
+ * pero la respuesta ya se ha ido: el visitante no espera ni un milisegundo por
+ * la analítica. Sin esto habría que elegir entre añadir una ida y vuelta a
+ * Supabase a cada petición o no contar nada.
+ *
+ * Se llama al PRINCIPIO, antes de `getUser()`, y a propósito: si más adelante
+ * el proxy redirige, la visita ya está contada. Una visita a `/perfil` sin
+ * sesión sigue siendo una visita —alguien intentó entrar—, y perderla haría que
+ * el embudo de registro pareciera más estrecho de lo que es.
+ *
+ * Nada de aquí puede lanzar hacia fuera: `registrarVisita` se traga sus propios
+ * errores y `decidirVisita` es aritmética sobre cadenas.
+ */
+function contarVisita(request: NextRequest, event: NextFetchEvent): void {
+  const visita = decidirVisita({
+    method: request.method,
+    pathname: request.nextUrl.pathname,
+    host: request.nextUrl.hostname,
+    cabeceras: request.headers,
+  });
+
+  if (visita) event.waitUntil(registrarVisita(visita));
+}
+
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  contarVisita(request, event);
+
   /*
    * La CSP no lleva nonce. Aquí hubo uno, con `strict-dynamic`, y hubo que
    * quitarlo: un nonce cambia en cada petición y no puede hornearse en HTML

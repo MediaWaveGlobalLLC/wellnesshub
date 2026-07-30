@@ -2,11 +2,17 @@
   "public": [
     "/",
     "/registro",
+    "/registro/confirmar",
     "/iniciar-sesion",
     "/recuperar",
+    "/recuperar/nueva",
     "/menu",
+    "/nosotros",
     "/comunidad",
-    "/gift-cards"
+    "/visitanos",
+    "/gift-cards",
+    "/terminos",
+    "/privacidad"
   ],
   "authenticated": [
     "/perfil",
@@ -21,6 +27,7 @@
   "admin": [
     "/admin",
     "/admin/metricas",
+    "/admin/visitas",
     "/admin/catalogo",
     "/admin/usuarios",
     "/admin/usuarios/[id]",
