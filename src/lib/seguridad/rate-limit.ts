@@ -21,7 +21,8 @@ export type Accion =
   | "reset"
   | "password"
   | "admin_ajuste"
-  | "admin_catalogo";
+  | "admin_catalogo"
+  | "admin_operaciones";
 
 export type Veredicto = { permitido: true } | { permitido: false; reintentarEn: number };
 

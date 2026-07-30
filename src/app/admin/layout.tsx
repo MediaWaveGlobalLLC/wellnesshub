@@ -32,8 +32,11 @@ const SECCIONES: { href: string; texto: string; permiso?: Permiso }[] = [
   { href: "/admin/metricas", texto: "Métricas", permiso: "ver_negocio" },
   { href: "/admin/visitas", texto: "Visitas", permiso: "ver_negocio" },
   { href: "/admin/catalogo", texto: "Catálogo", permiso: "marcar_agotado" },
+  { href: "/admin/eventos", texto: "Eventos", permiso: "ver_eventos" },
   { href: "/admin/usuarios", texto: "Usuarios", permiso: "ver_usuarios" },
   { href: "/admin/gift-cards", texto: "Gift cards", permiso: "ver_gift_cards" },
+  { href: "/admin/newsletter", texto: "Lista de correo", permiso: "ver_newsletter" },
+  { href: "/admin/equipo", texto: "Equipo", permiso: "gestionar_admins" },
   { href: "/admin/auditoria", texto: "Auditoría", permiso: "ver_auditoria" },
 ];
 

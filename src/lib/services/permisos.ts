@@ -23,9 +23,14 @@ export type Permiso =
   | "ajustar_saldo"
   | "ver_auditoria"
   | "ver_gift_cards"
+  | "operar_gift_cards"
   | "ver_negocio"
   | "marcar_agotado"
   | "editar_catalogo"
+  | "ver_eventos"
+  | "gestionar_eventos"
+  | "marcar_asistencia"
+  | "ver_newsletter"
   | "gestionar_admins";
 
 const MATRIZ: Record<Permiso, readonly Rol[]> = {
@@ -37,10 +42,27 @@ const MATRIZ: Record<Permiso, readonly Rol[]> = {
   ajustar_saldo: ["duena"],
   ver_auditoria: ["duena"],
   ver_gift_cards: ["duena"],
+  // Anular o cambiar el código de una tarjeta es tocar dinero ya cobrado.
+  operar_gift_cards: ["duena"],
   ver_negocio: ["duena"],
-  // Lo único que el empleado escribe: se acabó la mallorca, se apaga.
+  // Lo único que el empleado escribe en la carta: se acabó la mallorca, se apaga.
   marcar_agotado: ["duena", "empleado"],
   editar_catalogo: ["duena"],
+  /*
+    Los eventos se parten en dos a propósito.
+
+    Programar un taller es decisión de negocio. Pero marcar quién entró por la
+    puerta es la tarea de la puerta, con la lista delante: si hay que llamar a
+    la dueña para marcar una casilla, la lista no se marca y los estados
+    'asistio'/'ausente' vuelven a quedarse sin escribir, que es donde llevaban
+    desde 0005.
+  */
+  ver_eventos: ["duena", "empleado"],
+  gestionar_eventos: ["duena"],
+  marcar_asistencia: ["duena", "empleado"],
+  // Una lista de correos es un fichero de datos personales, no una herramienta
+  // de mostrador.
+  ver_newsletter: ["duena"],
   gestionar_admins: ["duena"],
 };
 

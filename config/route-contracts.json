@@ -29,9 +29,13 @@
     "/admin/metricas",
     "/admin/visitas",
     "/admin/catalogo",
+    "/admin/eventos",
+    "/admin/eventos/[id]",
     "/admin/usuarios",
     "/admin/usuarios/[id]",
     "/admin/gift-cards",
+    "/admin/newsletter",
+    "/admin/equipo",
     "/admin/auditoria"
   ]
 }
