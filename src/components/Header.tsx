@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { useLang } from "@/lib/i18n";
 import { SITE, CLUB_OFERTA } from "@/lib/site";
-import { NAV_PRINCIPAL, navVisible } from "@/lib/nav";
+import { NAV_PRINCIPAL } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { BagIcon, UserIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
@@ -35,14 +35,11 @@ export function Header() {
   }, []);
 
   const solid = scrolled || open;
-  // Solo la home abre sobre un hero Forest. En el resto de las páginas el header
-  // arranca sobre fondo Leche, así que el texto claro sería ilegible: se usa
-  // Espresso aunque el header aún esté transparente.
   // Todas las páginas abren ahora sobre fondo Leche —la home incluida, desde que
   // sigue el mockup 04—, así que el header usa Espresso incluso mientras es
   // transparente. Antes alternaba a texto claro sobre el hero Forest.
   const enHome = pathname === "/";
-  const items = navVisible(NAV_PRINCIPAL);
+  const items = NAV_PRINCIPAL;
 
   return (
     <header
@@ -134,8 +131,8 @@ export function Header() {
           </Link>
 
           <Link
-            href="/tienda"
-            aria-label={lang === "es" ? "Tienda" : "Shop"}
+            href="/gift-cards"
+            aria-label="Gift cards"
             className={cn(
               "hidden p-2 transition-colors sm:block",
               "text-espresso hover:text-terracota"

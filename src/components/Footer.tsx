@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLang } from "@/lib/i18n";
 import { SITE, PILARES } from "@/lib/site";
-import { NAV_PRINCIPAL, navVisible } from "@/lib/nav";
+import { NAV_PRINCIPAL } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { LeafIcon, PinIcon, CupIcon, ChatIcon } from "@/components/icons";
 
@@ -20,7 +20,7 @@ import { LeafIcon, PinIcon, CupIcon, ChatIcon } from "@/components/icons";
  */
 export function Footer() {
   const { lang, t } = useLang();
-  const items = navVisible(NAV_PRINCIPAL).filter((i) => i.href !== "/");
+  const items = NAV_PRINCIPAL.filter((i) => i.href !== "/");
 
   return (
     <footer className="grain bg-forest text-leche">
