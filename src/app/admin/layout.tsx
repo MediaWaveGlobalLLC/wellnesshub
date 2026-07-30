@@ -30,6 +30,7 @@ export const dynamic = "force-dynamic";
 const SECCIONES: { href: string; texto: string; permiso?: Permiso }[] = [
   { href: "/admin", texto: "Resumen" },
   { href: "/admin/metricas", texto: "Métricas", permiso: "ver_negocio" },
+  { href: "/admin/catalogo", texto: "Catálogo", permiso: "marcar_agotado" },
   { href: "/admin/usuarios", texto: "Usuarios", permiso: "ver_usuarios" },
   { href: "/admin/gift-cards", texto: "Gift cards", permiso: "ver_gift_cards" },
   { href: "/admin/auditoria", texto: "Auditoría", permiso: "ver_auditoria" },

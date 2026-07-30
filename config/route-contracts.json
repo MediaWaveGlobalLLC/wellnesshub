@@ -21,6 +21,7 @@
   "admin": [
     "/admin",
     "/admin/metricas",
+    "/admin/catalogo",
     "/admin/usuarios",
     "/admin/usuarios/[id]",
     "/admin/gift-cards",

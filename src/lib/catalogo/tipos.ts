@@ -23,8 +23,16 @@ export type ProductoCatalogo = {
   nombre: string;
   nota: string | null;
   destacado: boolean;
+  /** Agotado hoy. Sigue en la carta, tachado: vuelve mañana. */
   disponible: boolean;
   esModificador: boolean;
+  /**
+   * Retirado de la carta. Distinto de agotado: esto no vuelve solo.
+   *
+   * No se borra porque `favorites.item_slug` lo apunta sin clave foránea, y
+   * borrarlo dejaría huérfano el favorito de quien lo hubiera guardado.
+   */
+  archivado: boolean;
   variantes: VarianteCatalogo[];
 };
 

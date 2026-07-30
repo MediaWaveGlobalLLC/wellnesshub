@@ -39,6 +39,7 @@ type FilaCategoria = {
     disponible: boolean;
     es_modificador: boolean;
     orden: number;
+    archivado_at: string | null;
     menu_variantes: {
       id: string;
       etiqueta: string | null;
@@ -51,7 +52,7 @@ type FilaCategoria = {
 const SELECT = `
   id, slug, nombre_es, mundo, estado, etiqueta_tamanos, orden,
   menu_productos (
-    id, slug, nombre, nota_es, destacado, disponible, es_modificador, orden,
+    id, slug, nombre, nota_es, destacado, disponible, es_modificador, orden, archivado_at,
     menu_variantes ( id, etiqueta, precio_cents, orden )
   )
 `;
@@ -63,7 +64,11 @@ function porOrden<T extends { orden: number }>(filas: T[]): T[] {
   return [...filas].sort((a, b) => a.orden - b.orden);
 }
 
-function mapear(filas: FilaCategoria[]): CategoriaCatalogo[] {
+/**
+ * @param incluirArchivados solo para la administración, que necesita verlos
+ *   para poder restaurarlos. La carta pública nunca los muestra.
+ */
+function mapear(filas: FilaCategoria[], incluirArchivados = false): CategoriaCatalogo[] {
   return porOrden(filas).map((c) => ({
     id: c.id,
     slug: c.slug,
@@ -71,7 +76,11 @@ function mapear(filas: FilaCategoria[]): CategoriaCatalogo[] {
     mundo: c.mundo,
     estado: c.estado,
     etiquetaTamanos: c.etiqueta_tamanos,
-    productos: porOrden(c.menu_productos ?? []).map((p) => ({
+    productos: porOrden(
+      // Archivado ≠ agotado. Agotado se ve tachado en la carta porque vuelve
+      // mañana; archivado ya no forma parte de la carta y no debe aparecer.
+      (c.menu_productos ?? []).filter((p) => incluirArchivados || p.archivado_at === null)
+    ).map((p) => ({
       id: p.id,
       slug: p.slug,
       nombre: p.nombre,
@@ -79,6 +88,7 @@ function mapear(filas: FilaCategoria[]): CategoriaCatalogo[] {
       destacado: p.destacado,
       disponible: p.disponible,
       esModificador: p.es_modificador,
+      archivado: p.archivado_at !== null,
       variantes: porOrden(p.menu_variantes ?? []).map((v) => ({
         id: v.id,
         etiqueta: v.etiqueta,
@@ -86,6 +96,23 @@ function mapear(filas: FilaCategoria[]): CategoriaCatalogo[] {
       })),
     })),
   }));
+}
+
+/**
+ * Catálogo COMPLETO, con los archivados, para el panel de administración.
+ *
+ * Sin respaldo y lanzando si falla, igual que `obtenerCatalogoParaPedido`: aquí
+ * se va a editar, y editar sobre una copia desactualizada es peor que no poder
+ * editar.
+ */
+export async function obtenerCatalogoAdmin(): Promise<CategoriaCatalogo[]> {
+  if (!supabaseConfigurado()) throw new Error("catálogo no disponible");
+
+  const supabase = crearClientePublico();
+  const { data, error } = await supabase.from("menu_categorias").select(SELECT);
+
+  if (error) throw new Error(`catálogo no disponible: ${error.message}`);
+  return mapear((data ?? []) as unknown as FilaCategoria[], true);
 }
 
 /**
@@ -117,6 +144,8 @@ function catalogoDeRespaldo(): CategoriaCatalogo[] {
       destacado: item.destacado === true,
       disponible: true,
       esModificador: false,
+      // El respaldo es la carta transcrita del PDF: ahí no hay nada archivado.
+      archivado: false,
       variantes: item.precio.split("/").map((p, k, todos) => ({
         id: `respaldo-${seccion.id}-${j}-${k}`,
         etiqueta: todos.length > 1 ? (k === 0 ? "12 oz" : "16 oz") : null,

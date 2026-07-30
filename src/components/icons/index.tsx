@@ -215,6 +215,90 @@ export const LockIcon = (p: IconProps) => (
   </Icon>
 );
 
+/* ── Iconos de administración ─────────────────────────────────────────────
+   Los de arriba son de marca: hablan de café, lealtad y comunidad. Estos son
+   de herramienta —editar, borrar, ordenar— y solo aparecen en el panel. Mismo
+   trazo y mismas reglas para que no se note la costura. */
+
+/** Chevron. Apunta abajo; se gira con rotate para las demás direcciones. */
+export const ChevronIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 9.5 12 15.5 18 9.5" />
+  </Icon>
+);
+
+/** Lupa — buscar. */
+export const LupaIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4.5 4.5" />
+  </Icon>
+);
+
+/** Lápiz — editar. */
+export const LapizIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 20h4.2l10-10a2.1 2.1 0 0 0-3-3l-10 10V20Z" />
+    <path d="m14.5 6.5 3 3" />
+  </Icon>
+);
+
+/** Papelera — archivar o retirar. */
+export const PapeleraIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 6.5h16" />
+    <path d="M9.5 6.5V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5" />
+    <path d="M6.5 6.5 7.4 20a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1l.9-13.5" />
+    <path d="M10.5 10.5v6.5M13.5 10.5v6.5" />
+  </Icon>
+);
+
+/** Check — confirmación. */
+export const CheckIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Icon>
+);
+
+/** Cerrar. */
+export const CerrarIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" />
+  </Icon>
+);
+
+/** Más — añadir. */
+export const MasIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 5v14M5 12h14" />
+  </Icon>
+);
+
+/** Flechas arriba/abajo — reordenar. */
+export const OrdenarIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 4.5v15M8 4.5 4.5 8M8 4.5 11.5 8" />
+    <path d="M16 19.5v-15M16 19.5 12.5 16M16 19.5 19.5 16" />
+  </Icon>
+);
+
+/** Descarga — exportar. */
+export const DescargaIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 4v11" />
+    <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+    <path d="M4.5 19.5h15" />
+  </Icon>
+);
+
+/** Barras — métricas. */
+export const GraficaIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 20h16" />
+    <path d="M7 20v-6M12 20V6M17 20v-9" />
+  </Icon>
+);
+
 /** Índice para la página interna /_design y para render dinámico. */
 export const ICONS = {
   leaf: LeafIcon,
@@ -236,6 +320,16 @@ export const ICONS = {
   mail: MailIcon,
   phone: PhoneIcon,
   lock: LockIcon,
+  chevron: ChevronIcon,
+  lupa: LupaIcon,
+  lapiz: LapizIcon,
+  papelera: PapeleraIcon,
+  check: CheckIcon,
+  cerrar: CerrarIcon,
+  mas: MasIcon,
+  ordenar: OrdenarIcon,
+  descarga: DescargaIcon,
+  grafica: GraficaIcon,
 } as const;
 
 export type IconName = keyof typeof ICONS;
