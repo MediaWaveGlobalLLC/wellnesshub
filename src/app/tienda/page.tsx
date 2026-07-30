@@ -72,7 +72,7 @@ export default function TiendaPage() {
       </section>
 
       {/* ─── CTA: disponible en tienda / próximamente online ─── */}
-      <section className="grain bg-terracota py-20 text-leche">
+      <section className="grain bg-terracota py-20 text-surface">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <Reveal>
             <h2 className="font-display text-3xl font-medium sm:text-4xl">

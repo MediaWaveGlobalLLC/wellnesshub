@@ -24,7 +24,7 @@ export function BotonFavorito({ slug, activo }: { slug: string; activo: boolean 
       className={cn(
         "inline-flex items-center gap-2 rounded-sm border px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition-colors disabled:opacity-50",
         activo
-          ? "border-terracota bg-terracota text-leche hover:bg-primary-hover"
+          ? "border-terracota bg-terracota text-surface hover:bg-primary-hover"
           : "border-border bg-surface text-text-muted hover:border-terracota hover:text-terracota"
       )}
     >

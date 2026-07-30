@@ -13,7 +13,9 @@
     "test:visual": "playwright test tests/visual",
     "validate:design": "node scripts/verify-protected-assets.mjs && node scripts/validate-design-system.mjs",
     "tokens": "node scripts/generate-tokens.mjs",
-    "assets": "node scripts/build-asset-manifest.mjs"
+    "assets": "node scripts/build-asset-manifest.mjs",
+    "verify:csp": "node scripts/verify-csp.mjs",
+    "audit:a11y": "node scripts/audit-a11y.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

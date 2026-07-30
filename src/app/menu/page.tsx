@@ -33,11 +33,20 @@ const FONDO: Record<MenuSection["mundo"], string> = {
   comida: "bg-mustard/10",
 };
 
+/*
+  Color del título de cada sección.
+
+  `comida` usaba mustard y daba 2.13:1 sobre el fondo claro, cuando incluso el
+  umbral relajado de texto grande pide 3:1. Mustard es un amarillo: funciona como
+  fondo, como borde o como icono, pero no como texto. La identidad del mundo
+  `comida` la sigue marcando su fondo `bg-mustard/10`; solo cambia el color de la
+  letra, que además es una elección mía de la Fase 7, no del mockup.
+*/
 const ACENTO: Record<MenuSection["mundo"], string> = {
   matcha: "text-olive",
   cafe: "text-espresso",
   piel: "text-terracota",
-  comida: "text-mustard",
+  comida: "text-espresso",
 };
 
 function Seccion({ seccion, indice }: { seccion: MenuSection; indice: number }) {
@@ -158,7 +167,7 @@ export default function MenuPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               href="/registro"
-              className="btn-pill inline-flex items-center bg-terracota px-7 text-[0.75rem] font-bold uppercase tracking-[0.12em] text-leche transition-colors hover:bg-primary-hover"
+              className="btn-pill inline-flex items-center bg-terracota px-7 text-[0.75rem] font-bold uppercase tracking-[0.12em] text-surface transition-colors hover:bg-primary-hover"
             >
               Únete al Club SIEMBRA
             </Link>

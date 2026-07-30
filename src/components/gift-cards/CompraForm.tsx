@@ -80,7 +80,7 @@ export function CompraForm({ haySesion }: { haySesion: boolean }) {
               className={cn(
                 "min-w-[4.5rem] rounded-lg border px-4 py-3 text-sm font-semibold transition-colors",
                 !usandoPersonalizado && centavos === m
-                  ? "border-terracota bg-terracota text-leche"
+                  ? "border-terracota bg-terracota text-surface"
                   : "border-border bg-surface text-espresso hover:border-terracota"
               )}
             >

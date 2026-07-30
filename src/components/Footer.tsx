@@ -132,7 +132,18 @@ export function Footer() {
           <p>
             © {new Date().getFullYear()} SIEMBRA · {SITE.legal}
           </p>
-          <p>{lang === "es" ? "Condado, Puerto Rico" : "Condado, Puerto Rico"}</p>
+          {/*
+            Los legales van aquí, no solo en el registro: quien ya tiene cuenta
+            no vuelve a pasar por esa casilla y necesita poder consultarlos.
+          */}
+          <nav className="flex items-center gap-4">
+            <Link href="/terminos" className="transition-colors hover:text-avena">
+              {lang === "es" ? "Términos" : "Terms"}
+            </Link>
+            <Link href="/privacidad" className="transition-colors hover:text-avena">
+              {lang === "es" ? "Privacidad" : "Privacy"}
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

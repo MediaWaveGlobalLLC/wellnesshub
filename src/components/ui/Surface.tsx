@@ -18,7 +18,7 @@ export function Card({
   const TONOS = {
     claro: "bg-surface border-border text-espresso",
     avena: "bg-avena border-mustard/30 text-espresso",
-    terracota: "bg-terracota border-terracota text-leche",
+    terracota: "bg-terracota border-terracota text-surface",
     forest: "bg-forest border-forest text-avena",
   } as const;
 

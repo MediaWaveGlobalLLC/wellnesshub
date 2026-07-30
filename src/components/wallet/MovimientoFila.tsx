@@ -16,7 +16,7 @@ export function MovimientoFila({ movimiento }: { movimiento: MovimientoWallet })
       <span
         aria-hidden
         className={`circle mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-          positivo ? "bg-forest text-avena" : "bg-terracota text-leche"
+          positivo ? "bg-forest text-avena" : "bg-terracota text-surface"
         }`}
       >
         {positivo ? "+" : "−"}

@@ -105,7 +105,7 @@ export default async function ConfirmacionPage({
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link
             href="/wallet"
-            className="btn-pill inline-flex items-center bg-terracota px-7 text-[0.75rem] font-bold uppercase tracking-[0.12em] text-leche transition-colors hover:bg-primary-hover"
+            className="btn-pill inline-flex items-center bg-terracota px-7 text-[0.75rem] font-bold uppercase tracking-[0.12em] text-surface transition-colors hover:bg-primary-hover"
           >
             Ver mis créditos
           </Link>

@@ -156,7 +156,7 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="flex items-center justify-center gap-4 rounded-lg bg-terracota py-6 text-leche">
+            <div className="flex items-center justify-center gap-4 rounded-lg bg-terracota py-6 text-surface">
               {["leaf", "gift", "wallet", "crown"].map((k) => {
                 const C = ICONS[k as keyof typeof ICONS];
                 return <C key={k} size={24} />;

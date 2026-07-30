@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabaseConfigurado } from "@/lib/supabase/env";
+import { CABECERAS_ESTATICAS, construirCSP } from "@/lib/seguridad/cabeceras";
 
 /**
  * Proxy de sesión — Next 16.
@@ -24,11 +25,40 @@ const RUTAS_ADMIN = ["/admin"];
 /** Rutas de entrada: si ya hay sesión, no tiene sentido volver a ellas. */
 const RUTAS_INVITADO = ["/iniciar-sesion", "/registro", "/recuperar"];
 
-export async function proxy(request: NextRequest) {
-  // Sin Supabase configurado, la web pública debe seguir sirviéndose igual.
-  if (!supabaseConfigurado()) return NextResponse.next();
+/**
+ * Aplica las cabeceras de seguridad a cualquier respuesta que salga de aquí.
+ *
+ * Se hace en una función para que no se pueda olvidar en ninguna de las tres
+ * salidas del proxy: continuar, redirigir a login o redirigir a perfil.
+ */
+function conSeguridad(respuesta: NextResponse, csp: string): NextResponse {
+  respuesta.headers.set("Content-Security-Policy", csp);
+  for (const [clave, valor] of Object.entries(CABECERAS_ESTATICAS)) {
+    respuesta.headers.set(clave, valor);
+  }
+  return respuesta;
+}
 
-  let response = NextResponse.next({ request });
+export async function proxy(request: NextRequest) {
+  /*
+   * La CSP no lleva nonce. Aquí hubo uno, con `strict-dynamic`, y hubo que
+   * quitarlo: un nonce cambia en cada petición y no puede hornearse en HTML
+   * prerenderizado, así que `/`, `/menu` y `/registro` salían sin firmar y el
+   * navegador bloqueaba todos los chunks de Next. La página se pintaba, no
+   * hidrataba y ningún formulario respondía.
+   *
+   * Se detectó comprobando la consola contra un build de producción. Ni en
+   * desarrollo —donde la CSP se relaja— ni con los siete gates se ve esto:
+   * `scripts/verify-csp.mjs` existe para que no vuelva a pasar.
+   */
+  const csp = construirCSP(SUPABASE_URL);
+
+  // Sin Supabase configurado, la web pública debe seguir sirviéndose igual.
+  if (!supabaseConfigurado()) {
+    return conSeguridad(NextResponse.next(), csp);
+  }
+
+  let response = NextResponse.next();
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
@@ -64,17 +94,17 @@ export async function proxy(request: NextRequest) {
     // Se guarda el destino para volver tras entrar. Solo rutas internas:
     // aceptar una URL absoluta abriría un open redirect (docs/06).
     url.searchParams.set("siguiente", pathname);
-    return NextResponse.redirect(url);
+    return conSeguridad(NextResponse.redirect(url), csp);
   }
 
   if (user && RUTAS_INVITADO.some((p) => pathname === p)) {
     const url = request.nextUrl.clone();
     url.pathname = "/perfil";
     url.search = "";
-    return NextResponse.redirect(url);
+    return conSeguridad(NextResponse.redirect(url), csp);
   }
 
-  return response;
+  return conSeguridad(response, csp);
 }
 
 export const config = {

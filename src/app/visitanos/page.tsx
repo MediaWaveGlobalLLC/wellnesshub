@@ -87,7 +87,7 @@ export default function VisitanosPage() {
                 href={SITE.mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block btn-pill bg-terracota px-8 py-4 text-center text-sm font-bold uppercase tracking-widest text-leche shadow-warm transition-all hover:scale-[1.02] hover:bg-espresso"
+                className="block btn-pill bg-terracota px-8 py-4 text-center text-sm font-bold uppercase tracking-widest text-surface shadow-warm transition-all hover:scale-[1.02] hover:bg-espresso"
               >
                 {lang === "es" ? "Abrir en Google Maps" : "Open in Google Maps"}
               </a>

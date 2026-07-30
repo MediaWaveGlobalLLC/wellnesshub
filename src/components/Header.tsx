@@ -56,7 +56,7 @@ export function Header() {
         Solo en la home: los mockups 01, 02 y 03 no la llevan.
       */}
       {enHome && (
-        <div className="bg-terracota text-center text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-leche">
+        <div className="bg-terracota text-center text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-surface">
           <p className="mx-auto max-w-[var(--container-content)] px-5 py-2.5 sm:px-8">
             Club SIEMBRA · {CLUB_OFERTA.es}
           </p>
@@ -113,7 +113,7 @@ export function Header() {
               hasta que exista una URL de pedidos real. */}
           <Link
             href="/menu"
-            className="btn-pill hidden items-center bg-terracota px-5 text-[12px] font-bold uppercase tracking-[0.08em] text-leche transition-colors hover:bg-primary-hover sm:inline-flex"
+            className="btn-pill hidden items-center bg-terracota px-5 text-[12px] font-bold uppercase tracking-[0.08em] text-surface transition-colors hover:bg-primary-hover sm:inline-flex"
           >
             {lang === "es" ? "Ordena online" : "Order online"}
           </Link>
@@ -182,7 +182,7 @@ export function Header() {
               <Link
                 href="/menu"
                 onClick={() => setOpen(false)}
-                className="btn-pill mt-4 flex justify-center bg-terracota px-6 text-sm font-bold uppercase tracking-widest text-leche"
+                className="btn-pill mt-4 flex justify-center bg-terracota px-6 text-sm font-bold uppercase tracking-widest text-surface"
               >
                 {lang === "es" ? "Ordena online" : "Order online"}
               </Link>

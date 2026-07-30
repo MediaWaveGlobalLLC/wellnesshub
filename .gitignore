@@ -63,3 +63,10 @@ next-env.d.ts
 
 # capturas de revisión por fase
 /evidencia/
+
+# Logs de los servidores que se levantan para verificar, y salidas de Playwright
+# cuando un test falla. Son de la máquina de quien ejecuta, no del proyecto.
+.next-dev.log
+.next-prod*.log
+/test-results/
+/playwright-report/

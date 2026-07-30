@@ -13,6 +13,13 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "tests",
+  /*
+    Solo los specs de Playwright. Sin esto, `testDir: "tests"` barría también
+    `tests/unit` y `tests/integration`, que son de Vitest: Playwright intentaba
+    cargarlos, reventaba en el `import` y el gate E2E terminaba en «No tests
+    found» — es decir, llevaba desde la Fase 1 sin ejecutar nada.
+  */
+  testMatch: /tests[\\/](e2e|visual)[\\/].*\.spec\.ts$/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

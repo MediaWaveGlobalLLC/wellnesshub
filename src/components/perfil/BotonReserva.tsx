@@ -25,7 +25,7 @@ export function BotonReserva({ eventId, reservado }: { eventId: string; reservad
         "inline-flex items-center gap-2 rounded-sm border px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors disabled:opacity-50",
         reservado
           ? "border-border bg-surface text-text-muted hover:border-danger hover:text-danger"
-          : "border-terracota bg-terracota text-leche hover:bg-primary-hover"
+          : "border-terracota bg-terracota text-surface hover:bg-primary-hover"
       )}
     >
       <CalendarIcon size={15} />

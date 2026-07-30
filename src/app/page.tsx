@@ -85,7 +85,7 @@ export default function Home() {
 
             <Link
               href="/menu"
-              className="btn-pill mt-9 inline-flex items-center bg-terracota px-8 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-leche transition-colors hover:bg-primary-hover"
+              className="btn-pill mt-9 inline-flex items-center bg-terracota px-8 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-surface transition-colors hover:bg-primary-hover"
             >
               Descubre el menú
             </Link>
@@ -213,7 +213,7 @@ export default function Home() {
       </section>
 
       {/* ── Únete a nuestra comunidad — bloque terracota del mockup 04 ───── */}
-      <section className="relative overflow-hidden bg-terracota py-14 text-leche sm:py-16">
+      <section className="relative overflow-hidden bg-terracota py-14 text-surface sm:py-16">
         {/* Motivo botánico del mockup, en el trazo de la marca. */}
         <LeafIcon
           size={340}
@@ -223,10 +223,20 @@ export default function Home() {
 
         <div className="relative mx-auto grid max-w-[var(--container-content)] gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:gap-14">
           <div>
-            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-leche/80">
+            {/*
+              Dos cambios por contraste, ninguno de marca:
+
+              1. Sin opacidad. Leche al 80 % daba 3.3:1 y al 90 %, 3.81:1, contra
+                 los 4.5:1 que pide AA. La opacidad la puse yo, no la paleta.
+              2. `surface` en lugar de `leche`. Leche sobre terracota se queda en
+                 4.39:1 —falla por 0.11— mientras que surface, que también es un
+                 token oficial, da 4.92:1. Terracota no se toca: solo cambia cuál
+                 de los dos blancos oficiales lleva el texto.
+            */}
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-surface">
               Únete a nuestra comunidad
             </p>
-            <p className="mt-4 max-w-md leading-relaxed text-leche/90">
+            <p className="mt-4 max-w-md leading-relaxed text-surface">
               Recibe beneficios exclusivos, promociones y contenido para tu bienestar.
             </p>
             <div className="mt-6 max-w-md">
@@ -237,10 +247,10 @@ export default function Home() {
           <ul className="space-y-5">
             {BENEFICIOS.map(({ Icono, titulo, detalle }) => (
               <li key={titulo} className="flex items-start gap-4">
-                <Icono size={26} className="mt-0.5 shrink-0 text-leche" />
+                <Icono size={26} className="mt-0.5 shrink-0 text-surface" />
                 <div>
-                  <p className="text-sm font-semibold text-leche">{titulo}</p>
-                  <p className="text-sm text-leche/80">{detalle}</p>
+                  <p className="text-sm font-semibold text-surface">{titulo}</p>
+                  <p className="text-sm text-surface">{detalle}</p>
                 </div>
               </li>
             ))}

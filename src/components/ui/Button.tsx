@@ -16,7 +16,7 @@ export type ButtonShape = "pill" | "soft";
 export type ButtonSize = "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primario: "bg-terracota text-leche hover:bg-primary-hover shadow-warm",
+  primario: "bg-terracota text-surface hover:bg-primary-hover shadow-warm",
   secundario:
     "border-[1.5px] border-espresso/30 text-espresso hover:border-espresso hover:bg-espresso hover:text-leche",
   forest: "bg-forest text-avena hover:bg-olive",

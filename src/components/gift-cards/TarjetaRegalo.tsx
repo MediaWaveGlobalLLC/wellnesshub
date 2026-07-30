@@ -24,7 +24,7 @@ export function TarjetaRegalo({
       aria-hidden
       className={cn(
         "relative aspect-[1.6/1] w-full overflow-hidden rounded-lg shadow-warm",
-        esForest ? "bg-forest text-avena" : "bg-terracota text-leche",
+        esForest ? "bg-forest text-avena" : "bg-terracota text-surface",
         className
       )}
     >

@@ -44,7 +44,7 @@ export default async function UsuariosPage({
         />
         <button
           type="submit"
-          className="btn-pill bg-terracota px-7 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-leche transition-colors hover:bg-primary-hover"
+          className="btn-pill bg-terracota px-7 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-surface transition-colors hover:bg-primary-hover"
         >
           Buscar
         </button>

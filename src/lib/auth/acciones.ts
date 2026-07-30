@@ -10,6 +10,7 @@ import {
   registroSchema,
   solicitarResetSchema,
 } from "@/lib/validation/auth";
+import { enMinutos, limitar, type Accion } from "@/lib/seguridad/rate-limit";
 
 /**
  * Server actions de autenticación.
@@ -64,10 +65,35 @@ function deZod(error: { flatten: () => { fieldErrors: Record<string, string[] | 
   };
 }
 
+/**
+ * Comprueba el límite de intentos y, si se superó, devuelve ya el error.
+ *
+ * Se llama DESPUÉS de validar el formulario: un payload malformado no debería
+ * gastar el cupo de nadie. Y siempre ANTES de hablar con Supabase, que es el
+ * trabajo caro que se quiere evitar.
+ */
+async function frenar(accion: Accion, identidad?: string): Promise<ResultadoAccion | null> {
+  const veredicto = await limitar(accion, identidad);
+  if (veredicto.permitido) return null;
+
+  return {
+    ok: false,
+    error: {
+      code: "demasiados_intentos",
+      message: `Demasiados intentos. Vuelve a probar en ${enMinutos(veredicto.reintentarEn)} minutos.`,
+    },
+  };
+}
+
 export async function registrarse(datos: unknown): Promise<ResultadoAccion> {
   const parsed = registroSchema.safeParse(datos);
   if (!parsed.success) return deZod(parsed.error);
   if (!supabaseConfigurado()) return SIN_CONFIG;
+
+  // Sin correo en la clave: si no, cada alta con un correo distinto estrenaría
+  // su propio cupo y crear cuentas en masa saldría gratis.
+  const frenado = await frenar("registro");
+  if (frenado) return frenado;
 
   const { email, password, firstName, lastName, phone, marketingOptIn } = parsed.data;
   const supabase = await crearClienteServidor();
@@ -110,6 +136,10 @@ export async function iniciarSesion(datos: unknown): Promise<ResultadoAccion> {
   if (!supabaseConfigurado()) return SIN_CONFIG;
 
   const { email, password, siguiente } = parsed.data;
+
+  const frenado = await frenar("login", email);
+  if (frenado) return frenado;
+
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -141,6 +171,11 @@ export async function solicitarReset(datos: unknown): Promise<ResultadoAccion> {
   const parsed = solicitarResetSchema.safeParse(datos);
   if (!parsed.success) return deZod(parsed.error);
   if (!supabaseConfigurado()) return SIN_CONFIG;
+
+  // El límite cuenta intentos, no aciertos, así que este mensaje no delata si la
+  // cuenta existe: sale igual para un correo registrado que para uno inventado.
+  const frenado = await frenar("reset", parsed.data.email);
+  if (frenado) return frenado;
 
   const supabase = await crearClienteServidor();
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {
@@ -212,6 +247,9 @@ export async function actualizarPassword(datos: unknown): Promise<ResultadoAccio
   const parsed = nuevaPasswordSchema.safeParse(datos);
   if (!parsed.success) return deZod(parsed.error);
   if (!supabaseConfigurado()) return SIN_CONFIG;
+
+  const frenado = await frenar("password");
+  if (frenado) return frenado;
 
   const supabase = await crearClienteServidor();
   const {
