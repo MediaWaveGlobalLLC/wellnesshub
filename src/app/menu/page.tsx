@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Surface";
 import { Reveal } from "@/components/Reveal";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
-import { MENU, type MenuSection } from "@/lib/site";
 import { LeafIcon } from "@/components/icons";
+import { obtenerCatalogo } from "@/lib/catalogo/service";
+import { precioDeCarta, type CategoriaCatalogo, type Mundo } from "@/lib/catalogo/tipos";
 
 /**
  * /menu — carta oficial.
@@ -16,8 +17,13 @@ import { LeafIcon } from "@/components/icons";
  * interacción, así que no hay motivo para enviar JavaScript ni para partir la
  * carta en dos vistas que obligan a hacer clic para ver la mitad.
  *
- * Precios y nombres salen de `src/lib/site.ts`, transcritos del PDF oficial.
- * Cero productos inventados.
+ * Los precios ya NO salen del código: vienen del catálogo en base de datos
+ * (`0011_catalogo.sql`), sembrado desde la misma transcripción del PDF oficial.
+ * El motivo es que un pedido necesita centavos enteros y un identificador por
+ * producto, y porque subir el precio del café no puede exigir un despliegue.
+ *
+ * Cero productos inventados: `tests/integration/catalogo-fidelidad.test.ts`
+ * compara el catálogo contra la carta original y falla si difieren.
  */
 export const metadata: Metadata = {
   title: "Menú",
@@ -25,8 +31,18 @@ export const metadata: Metadata = {
     "Barra de matcha, cafés, bebidas para tu piel y pastelería. Precios en USD. SIEMBRA, Condado.",
 };
 
+/**
+ * La carta se sirve estática y se refresca sola cada 5 minutos.
+ *
+ * Sin esto quedaría horneada en el build, y cambiar el precio de un café
+ * exigiría desplegar — que es justo lo que se quería evitar al sacar el menú
+ * del código. Con revalidación, el visitante recibe HTML ya generado y el
+ * cambio entra solo en la siguiente ventana.
+ */
+export const revalidate = 300;
+
 /** Fondo por "mundo" del menú — paleta oficial. */
-const FONDO: Record<MenuSection["mundo"], string> = {
+const FONDO: Record<Mundo, string> = {
   matcha: "bg-teatree/25",
   cafe: "bg-surface",
   piel: "bg-terracota/8",
@@ -42,42 +58,51 @@ const FONDO: Record<MenuSection["mundo"], string> = {
   `comida` la sigue marcando su fondo `bg-mustard/10`; solo cambia el color de la
   letra, que además es una elección mía de la Fase 7, no del mockup.
 */
-const ACENTO: Record<MenuSection["mundo"], string> = {
+const ACENTO: Record<Mundo, string> = {
   matcha: "text-olive",
   cafe: "text-espresso",
   piel: "text-terracota",
   comida: "text-espresso",
 };
 
-function Seccion({ seccion, indice }: { seccion: MenuSection; indice: number }) {
+function Seccion({ seccion, indice }: { seccion: CategoriaCatalogo; indice: number }) {
   return (
     <Reveal delay={indice * 0.05}>
-      <div id={seccion.id} className={`h-full scroll-mt-28 rounded-lg border border-border p-7 ${FONDO[seccion.mundo]}`}>
+      <div id={seccion.slug} className={`h-full scroll-mt-28 rounded-lg border border-border p-7 ${FONDO[seccion.mundo]}`}>
         <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-espresso/15 pb-4">
-          <h3 className={`font-display text-2xl ${ACENTO[seccion.mundo]}`}>{seccion.titulo.es}</h3>
-          {seccion.sizes && (
+          <h3 className={`font-display text-2xl ${ACENTO[seccion.mundo]}`}>{seccion.nombre}</h3>
+          {seccion.etiquetaTamanos && (
             <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-text-muted">
-              {seccion.sizes}
+              {seccion.etiquetaTamanos}
             </span>
           )}
         </div>
 
         <ul className="space-y-3.5">
-          {seccion.items.map((item) => (
-            <li key={item.nombre} className="flex items-baseline gap-2">
+          {seccion.productos.map((producto) => (
+            <li key={producto.slug} className="flex items-baseline gap-2">
               <span className="flex items-center gap-1.5 font-medium text-espresso">
-                {item.destacado && (
+                {producto.destacado && (
                   <LeafIcon size={14} className="text-mustard" aria-label="Destacado" />
                 )}
-                {item.nombre}
-                {item.nota && (
+                {producto.nombre}
+                {producto.nota && (
                   <span className="text-xs font-normal italic text-text-muted">
-                    ({item.nota.es})
+                    ({producto.nota})
+                  </span>
+                )}
+                {/* Agotado se marca aquí y no se oculta el producto: que no
+                    esté hoy no significa que deje de existir en la carta. */}
+                {!producto.disponible && (
+                  <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    Agotado
                   </span>
                 )}
               </span>
               <span className="mx-1 flex-1 border-b border-dotted border-espresso/25" />
-              <span className="shrink-0 font-display text-lg text-espresso">${item.precio}</span>
+              <span className="shrink-0 font-display text-lg text-espresso">
+                ${precioDeCarta(producto.variantes)}
+              </span>
             </li>
           ))}
         </ul>
@@ -86,9 +111,10 @@ function Seccion({ seccion, indice }: { seccion: MenuSection; indice: number }) 
   );
 }
 
-export default function MenuPage() {
-  const hoy = MENU.filter((s) => s.status === "hoy");
-  const pronto = MENU.filter((s) => s.status === "pronto");
+export default async function MenuPage() {
+  const { categorias } = await obtenerCatalogo();
+  const hoy = categorias.filter((c) => c.estado === "hoy");
+  const pronto = categorias.filter((c) => c.estado === "pronto");
 
   return (
     <>
