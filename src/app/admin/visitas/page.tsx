@@ -206,6 +206,13 @@ export default async function VisitasPage({
           <li>
             <strong>Sin el panel.</strong> Tus propias visitas a esta administración no se cuentan.
           </li>
+          <li>
+            <strong>No cuadra con Vercel, y está bien.</strong> El panel de Vercel también cuenta
+            visitas y siempre dará un número distinto: mide lo que el navegador consigue reportar
+            —y se pierde con bloqueadores—, mientras que esto cuenta lo que el servidor sirve.
+            Vercel te da país y dispositivo, que aquí no hay; aquí ves a quien bloquea scripts, que
+            allí no aparece. No hay que cuadrarlas.
+          </li>
         </ul>
       </Card>
     </>
