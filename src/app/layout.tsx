@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { fontClassNames } from "@/lib/fonts";
 import { Providers } from "@/components/Providers";
@@ -44,6 +45,31 @@ export default function RootLayout({
           <main>{children}</main>
           <Footer />
         </Providers>
+
+        {/*
+          Vercel Web Analytics.
+
+          Pasa la CSP sin tocarla, y conviene dejarlo escrito porque en `0016`
+          afirmé lo contrario: el script NO viene de un dominio externo. Estando
+          desplegado, Vercel lo sirve desde el propio origen
+          (`/_vercel/insights/script.js`) y el beacon va a
+          `/_vercel/insights/event`, así que `script-src 'self'` y
+          `connect-src 'self'` ya lo cubren. Aquella objeción valía para un CDN
+          de terceros; para esto, no.
+
+          SOLO CUANDO ESTÁ DESPLEGADO EN VERCEL. Fuera de ahí el paquete carga
+          un script de depuración desde `va.vercel-scripts.com` —ese sí externo,
+          y la CSP lo bloquea— y avisa por consola de que «puede haber un
+          bloqueador de anuncios activo», que manda a buscar el problema al
+          sitio equivocado. Y no se pierde nada: en local no existe el endpoint
+          que recoge los datos, así que no mediría nada de todos modos.
+
+          Convive con el recuento propio de `/admin/visitas`, que cuenta desde
+          el servidor. Miden cosas distintas y no hay que cuadrarlas: este
+          cuenta lo que el navegador consigue reportar —y se pierde con
+          bloqueadores—, aquel cuenta lo que el servidor sirve.
+        */}
+        {process.env.VERCEL === "1" && <Analytics />}
       </body>
     </html>
   );
