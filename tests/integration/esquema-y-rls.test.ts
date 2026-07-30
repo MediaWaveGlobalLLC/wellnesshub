@@ -6,13 +6,19 @@
  * de docs/06. Cada prueba arranca con una base limpia: sin estado compartido,
  * el orden no importa.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { comoUsuario, crearBase, crearUsuario, type Db } from "./supabase-harness";
 
 let db: Db;
 
 beforeEach(async () => {
   db = await crearBase();
+});
+
+// Cerrar la instancia entre pruebas. Sin esto quedan 21 Postgres en WASM vivos
+// en el mismo proceso y las lecturas empiezan a devolver datos de otra base.
+afterEach(async () => {
+  await db?.close();
 });
 
 describe("alta de usuario — trigger handle_new_user", () => {
@@ -43,12 +49,18 @@ describe("alta de usuario — trigger handle_new_user", () => {
     expect(Number(wallet.rows[0].balance_cents)).toBe(0);
     expect(wallet.rows[0].currency).toBe("USD");
 
-    const lealtad = await db.query<{ points_balance: bigint; tier: string }>(
-      "select points_balance, tier from public.loyalty_accounts where user_id = $1",
+    const lealtad = await db.query<{ points_balance: bigint }>(
+      "select points_balance from public.loyalty_accounts where user_id = $1",
       [id]
     );
     expect(Number(lealtad.rows[0].points_balance)).toBe(0);
-    expect(lealtad.rows[0].tier).toBe("semilla");
+
+    // El nivel se deriva, no se guarda (migración 0006).
+    const nivel = await db.query<{ tier: string }>(
+      "select tier from public.loyalty_accounts_con_nivel where user_id = $1",
+      [id]
+    );
+    expect(nivel.rows[0].tier).toBe("semilla");
   });
 
   it("asigna un member_id con el prefijo de marca y único por usuario", async () => {

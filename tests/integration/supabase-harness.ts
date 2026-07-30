@@ -130,6 +130,30 @@ export async function crearUsuario(
 }
 
 /**
+ * Lectura que ignora la caché de sentencias de PGlite.
+ *
+ * PGlite reutiliza el resultado de una consulta parametrizada idéntica dentro de
+ * la misma sesión. Si una prueba lee el mismo SQL antes y después de un cambio,
+ * la segunda lectura devuelve el valor viejo y el fallo parece un bug del
+ * esquema: costó un buen rato descubrir que el dato en la base era correcto y
+ * quien mentía era la prueba.
+ *
+ * Un comentario único no basta: se normaliza antes de la caché. Envolver la
+ * consulta con un alias distinto sí cambia el árbol de parseo y fuerza la
+ * ejecución real. Úsalo siempre que compruebes un valor que acaba de cambiar.
+ */
+let contadorLecturas = 0;
+export async function leerFresco<T>(
+  db: Db,
+  sql: string,
+  params: unknown[] = []
+): Promise<T[]> {
+  const alias = `fresco_${contadorLecturas++}`;
+  const r = await db.query<T>(`select ${alias}.* from (${sql}) as ${alias}`, params);
+  return r.rows;
+}
+
+/**
  * Ejecuta `fn` como ese usuario autenticado: rol `authenticated` y el `sub` del
  * JWT puesto, que es exactamente el contexto en el que Postgres evalúa las
  * políticas RLS en producción.
