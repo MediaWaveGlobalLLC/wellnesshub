@@ -1,0 +1,12 @@
+# Sin conversión de finales de línea, en ningún fichero.
+#
+# `scripts/verify-protected-assets.mjs` comprueba el SHA-256 de CLAUDE.md,
+# config/design-tokens.json, los mockups y el Brand Book. Con la conversión
+# automática de git, al clonar en Windows esos ficheros se materializan con CRLF
+# y el hash deja de coincidir: `npm run validate:design` falla en una máquina
+# limpia sin que nadie haya tocado nada.
+#
+# Pasó de verdad —113 saltos de línea convertidos en CLAUDE.md, 113 bytes de
+# diferencia— y el mensaje de error, "modified CLAUDE.md", apunta justo al sitio
+# equivocado.
+* -text
