@@ -5,8 +5,9 @@ import { notFound, redirect } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
 import { AjusteForm } from "@/components/admin/AjusteForm";
-import { exigirAdmin } from "@/lib/services/admin-service";
+import { actorPuede, exigirAdmin } from "@/lib/services/admin-service";
 import { obtenerFicha, type Movimiento } from "@/lib/services/admin-consultas";
+import { usuarioIdSchema } from "@/lib/validation/admin";
 import { formatearDolares, formatearPuntos } from "@/lib/loyalty";
 import { formatearTelefono } from "@/lib/telefono";
 
@@ -79,11 +80,27 @@ export default async function FichaUsuarioPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  if (!(await exigirAdmin())) redirect("/");
+  const actor = await exigirAdmin();
+  if (!actor) redirect("/");
 
   const { id } = await params;
+
+  /*
+    Validar el id ANTES de consultar. Sin esto, `/admin/usuarios/hola` llegaba a
+    Postgres tal cual y reventaba con un `22P02: invalid input syntax for type
+    uuid` sin capturar; como tampoco había `error.tsx`, acababa en la pantalla
+    de error genérica de Next. Un id que no es un id es un 404, no un fallo.
+  */
+  if (!usuarioIdSchema.safeParse(id).success) notFound();
+
   const ficha = await obtenerFicha(id);
   if (!ficha) notFound();
+
+  // El mostrador ve el saldo actual —lo necesita para responder «¿cuánto
+  // tengo?»— pero no el historial de movimientos, que dice dónde y cuándo
+  // gasta una persona.
+  const verLedger = actorPuede(actor, "ver_ledger");
+  const puedeAjustar = actorPuede(actor, "ajustar_saldo");
 
   return (
     <>
@@ -129,26 +146,29 @@ export default async function FichaUsuarioPage({
         </div>
       </Card>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-2">
-        <Card className="p-6">
-          <h3 className="font-display text-lg text-espresso">Ajustar crédito</h3>
-          <p className="mt-1 text-sm text-text-muted">Dinero de tienda, en dólares.</p>
-          <div className="mt-5">
-            <AjusteForm userId={ficha.id} tipo="wallet" />
-          </div>
-        </Card>
+      {puedeAjustar && (
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <Card className="p-6">
+            <h3 className="font-display text-lg text-espresso">Ajustar crédito</h3>
+            <p className="mt-1 text-sm text-text-muted">Dinero de tienda, en dólares.</p>
+            <div className="mt-5">
+              <AjusteForm userId={ficha.id} tipo="wallet" />
+            </div>
+          </Card>
 
-        <Card className="p-6">
-          <h3 className="font-display text-lg text-espresso">Ajustar puntos</h3>
-          <p className="mt-1 text-sm text-text-muted">
-            Lealtad. No tiene valor monetario ni toca el crédito.
-          </p>
-          <div className="mt-5">
-            <AjusteForm userId={ficha.id} tipo="puntos" />
-          </div>
-        </Card>
-      </div>
+          <Card className="p-6">
+            <h3 className="font-display text-lg text-espresso">Ajustar puntos</h3>
+            <p className="mt-1 text-sm text-text-muted">
+              Lealtad. No tiene valor monetario ni toca el crédito.
+            </p>
+            <div className="mt-5">
+              <AjusteForm userId={ficha.id} tipo="puntos" />
+            </div>
+          </Card>
+        </div>
+      )}
 
+      {verLedger && (
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <Card className="p-6">
           <h3 className="font-display text-lg text-espresso">Movimientos de crédito</h3>
@@ -164,6 +184,7 @@ export default async function FichaUsuarioPage({
           </div>
         </Card>
       </div>
+      )}
     </>
   );
 }

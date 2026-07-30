@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { Card, Badge, Alert } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
-import { exigirAdmin } from "@/lib/services/admin-service";
+import { exigirDuena } from "@/lib/services/admin-service";
 import { listarPedidos } from "@/lib/services/admin-consultas";
 import { formatearDolares } from "@/lib/loyalty";
 
@@ -42,7 +42,9 @@ function fecha(iso: string): string {
 
 /** /admin/gift-cards — pedidos y estados (`docs/00`). */
 export default async function AdminGiftCardsPage() {
-  if (!(await exigirAdmin())) redirect("/");
+  // Los pedidos llevan nombre y correo de quien recibe el regalo: es sección de
+  // dueña, no de mostrador.
+  if (!(await exigirDuena())) notFound();
 
   const pedidos = await listarPedidos();
 
@@ -52,8 +54,17 @@ export default async function AdminGiftCardsPage() {
         <p>
           El código completo de una gift card <strong>no se puede recuperar</strong>: en la base
           solo vive su hash. Se muestran los últimos cuatro para identificarla al hablar con la
-          persona. Si alguien perdió su código, hay que anular la tarjeta y emitir otra —queda
-          registrado en la auditoría.
+          persona.
+        </p>
+        {/*
+          Este párrafo decía que se puede «anular la tarjeta y emitir otra». No
+          se puede: esa función no existe todavía. Prometer en la interfaz algo
+          que el sistema no hace es peor que no decir nada, porque alguien se lo
+          promete a un cliente. Llega en una fase posterior.
+        */}
+        <p className="mt-2">
+          Todavía <strong>no se puede anular ni reemitir</strong> una tarjeta desde aquí. Si alguien
+          perdió su código, hoy hay que resolverlo por Stripe.
         </p>
       </Alert>
 

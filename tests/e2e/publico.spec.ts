@@ -28,7 +28,15 @@ for (const { ruta, titulo } of PUBLICAS) {
     expect(respuesta?.status()).toBe(200);
 
     const h1 = page.locator("h1").first();
-    await expect(h1).toBeVisible();
+    /*
+      Timeout generoso a propósito. El servidor de estas pruebas es `npm run
+      dev`, que compila cada ruta la primera vez que alguien la pide; con los
+      cuatro viewports corriendo en paralelo, esa primera carga se pasaba a
+      veces del timeout por defecto y la suite salía roja sin que hubiera nada
+      roto. Es latencia de compilación, no de la aplicación: en producción la
+      página va prerenderizada.
+    */
+    await expect(h1).toBeVisible({ timeout: 15_000 });
     await expect(h1).toHaveText(titulo);
 
     // La home se desplegó una vez con el contenido en el DOM y la opacidad a 0.

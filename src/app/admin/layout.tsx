@@ -3,8 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { exigirAdmin } from "@/lib/services/admin-service";
+import { ETIQUETA_ROL, puede, type Permiso } from "@/lib/services/permisos";
 import { servicioDisponible } from "@/lib/supabase/admin";
-import { Alert } from "@/components/ui/Surface";
+import { Alert, Badge } from "@/components/ui/Surface";
 
 /**
  * Marco del panel administrativo.
@@ -19,11 +20,18 @@ import { Alert } from "@/components/ui/Surface";
  */
 export const dynamic = "force-dynamic";
 
-const SECCIONES = [
+/*
+  Las secciones que un empleado no puede abrir tampoco se le pintan.
+
+  Esconder el enlace NO es la autorización: cada página vuelve a comprobar el
+  rol y responde `notFound()` si no toca. Esto solo evita ofrecerle puertas
+  cerradas.
+*/
+const SECCIONES: { href: string; texto: string; permiso?: Permiso }[] = [
   { href: "/admin", texto: "Resumen" },
-  { href: "/admin/usuarios", texto: "Usuarios" },
-  { href: "/admin/gift-cards", texto: "Gift cards" },
-  { href: "/admin/auditoria", texto: "Auditoría" },
+  { href: "/admin/usuarios", texto: "Usuarios", permiso: "ver_usuarios" },
+  { href: "/admin/gift-cards", texto: "Gift cards", permiso: "ver_gift_cards" },
+  { href: "/admin/auditoria", texto: "Auditoría", permiso: "ver_auditoria" },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -58,11 +66,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               </p>
               <h1 className="mt-1 font-display text-2xl text-espresso">SIEMBRA</h1>
             </div>
-            <p className="text-xs text-text-muted">{actor.email}</p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-text-muted">{actor.email}</p>
+              <Badge tono={actor.rol === "duena" ? "exito" : "neutro"}>
+                {ETIQUETA_ROL[actor.rol]}
+              </Badge>
+            </div>
           </div>
 
           <nav aria-label="Secciones de administración" className="mt-5 flex flex-wrap gap-5">
-            {SECCIONES.map((s) => (
+            {SECCIONES.filter((s) => !s.permiso || puede(actor.rol, s.permiso)).map((s) => (
               <Link
                 key={s.href}
                 href={s.href}

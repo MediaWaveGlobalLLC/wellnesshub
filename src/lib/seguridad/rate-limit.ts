@@ -15,7 +15,7 @@ import { supabaseConfigurado } from "@/lib/supabase/env";
  * migración: dejarlos en manos de quien llama permitiría anularlos.
  */
 
-export type Accion = "login" | "registro" | "reset" | "password";
+export type Accion = "login" | "registro" | "reset" | "password" | "admin_ajuste";
 
 export type Veredicto = { permitido: true } | { permitido: false; reintentarEn: number };
 

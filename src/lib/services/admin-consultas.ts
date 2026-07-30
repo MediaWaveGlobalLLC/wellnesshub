@@ -23,77 +23,73 @@ export type ResumenUsuario = {
   alta: string;
 };
 
+export type PaginaUsuarios = {
+  usuarios: ResumenUsuario[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+};
+
 /**
  * Busca por nombre, apellido, correo, teléfono o member ID.
  *
- * El correo vive en `auth.users` y el resto en `profiles`, así que se busca en
- * los dos sitios y se unen los resultados.
+ * Una sola consulta, en `admin_buscar_usuarios` (`0014_perfil_email.sql`).
+ *
+ * La versión anterior hacía cuatro viajes y cruzaba en memoria, y el correo lo
+ * sacaba de `listUsers({ perPage: 200 })`. Ese 200 era un techo silencioso: a
+ * partir del socio 201, buscar por correo devolvía «Sin resultados» sobre
+ * cuentas que existían. Ahora el correo vive en `profiles` y se busca con un
+ * `ilike` normal.
  */
-export async function buscarUsuarios(consulta: string, limite = 25): Promise<ResumenUsuario[]> {
+export async function buscarUsuarios(
+  consulta: string,
+  pagina = 1,
+  porPagina = 25
+): Promise<PaginaUsuarios> {
   const servicio = crearClienteServicio();
-  const q = consulta.trim();
+  const paginaSegura = Math.max(1, Math.trunc(pagina));
 
-  let ids: string[] | null = null;
+  type Fila = {
+    id: string;
+    member_id: string;
+    nombre: string | null;
+    email: string | null;
+    telefono: string | null;
+    puntos: number;
+    nivel: string;
+    saldo_cents: number;
+    alta: string;
+    total: number;
+  };
 
-  if (q.length > 0) {
-    // `%` y `_` son comodines de LIKE: escaparlos evita que una búsqueda con
-    // guion bajo devuelva a todo el mundo.
-    const patron = `%${q.replace(/[%_]/g, (c) => `\\${c}`)}%`;
+  const { data, error } = await servicio.rpc("admin_buscar_usuarios", {
+    p_consulta: consulta.trim(),
+    p_limite: porPagina,
+    p_offset: (paginaSegura - 1) * porPagina,
+  });
 
-    const [porPerfil, porCorreo] = await Promise.all([
-      servicio
-        .from("profiles")
-        .select("id")
-        .or(
-          `first_name.ilike.${patron},last_name.ilike.${patron},` +
-            `phone.ilike.${patron},member_id.ilike.${patron}`
-        )
-        .limit(limite),
-      servicio.auth.admin.listUsers({ page: 1, perPage: 200 }),
-    ]);
+  if (error) throw new Error(`No se pudo buscar usuarios: ${error.message}`);
 
-    const deCorreo = (porCorreo.data?.users ?? [])
-      .filter((u) => u.email?.toLowerCase().includes(q.toLowerCase()))
-      .map((u) => u.id);
+  const filas = (data ?? []) as Fila[];
 
-    ids = [...new Set([...(porPerfil.data ?? []).map((p) => p.id), ...deCorreo])].slice(0, limite);
-    if (ids.length === 0) return [];
-  }
-
-  let perfilQuery = servicio
-    .from("profiles")
-    .select("id, first_name, last_name, phone, member_id, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limite);
-
-  if (ids) perfilQuery = perfilQuery.in("id", ids);
-
-  const { data: perfiles } = await perfilQuery;
-  if (!perfiles?.length) return [];
-
-  const encontrados = perfiles.map((p) => p.id);
-
-  const [{ data: lealtad }, { data: wallets }, listado] = await Promise.all([
-    servicio.from("loyalty_accounts_con_nivel").select("user_id, points_balance, tier").in("user_id", encontrados),
-    servicio.from("wallets").select("user_id, balance_cents").in("user_id", encontrados),
-    servicio.auth.admin.listUsers({ page: 1, perPage: 200 }),
-  ]);
-
-  const puntosPor = new Map((lealtad ?? []).map((l) => [l.user_id, l]));
-  const saldoPor = new Map((wallets ?? []).map((w) => [w.user_id, Number(w.balance_cents)]));
-  const correoPor = new Map((listado.data?.users ?? []).map((u) => [u.id, u.email ?? null]));
-
-  return perfiles.map((p) => ({
-    id: p.id,
-    memberId: p.member_id,
-    nombre: [p.first_name, p.last_name].filter(Boolean).join(" ") || "—",
-    email: correoPor.get(p.id) ?? null,
-    telefono: p.phone,
-    puntos: Number(puntosPor.get(p.id)?.points_balance ?? 0),
-    nivel: puntosPor.get(p.id)?.tier ?? "semilla",
-    saldoCents: saldoPor.get(p.id) ?? 0,
-    alta: p.created_at,
-  }));
+  return {
+    // `count(*) over ()` viaja en cada fila; sin filas no hay total, y sin
+    // resultados el total es cero de todos modos.
+    total: filas.length > 0 ? Number(filas[0]!.total) : 0,
+    pagina: paginaSegura,
+    porPagina,
+    usuarios: filas.map((f) => ({
+      id: f.id,
+      memberId: f.member_id,
+      nombre: f.nombre ?? "—",
+      email: f.email,
+      telefono: f.telefono,
+      puntos: Number(f.puntos),
+      nivel: f.nivel,
+      saldoCents: Number(f.saldo_cents),
+      alta: f.alta,
+    })),
+  };
 }
 
 export type Movimiento = {
@@ -153,10 +149,12 @@ export async function obtenerFicha(userId: string): Promise<FichaUsuario | null>
 async function buscarUsuariosPorId(userId: string): Promise<ResumenUsuario | null> {
   const servicio = crearClienteServicio();
 
-  const [{ data: perfil }, { data: lealtad }, { data: wallet }, usuario] = await Promise.all([
+  // Ya no hace falta preguntar a la API de Auth por el correo: desde
+  // `0014_perfil_email.sql` vive en `profiles`, sincronizado por trigger.
+  const [{ data: perfil }, { data: lealtad }, { data: wallet }] = await Promise.all([
     servicio
       .from("profiles")
-      .select("id, first_name, last_name, phone, member_id, created_at")
+      .select("id, first_name, last_name, phone, email, member_id, created_at")
       .eq("id", userId)
       .maybeSingle(),
     servicio
@@ -165,7 +163,6 @@ async function buscarUsuariosPorId(userId: string): Promise<ResumenUsuario | nul
       .eq("user_id", userId)
       .maybeSingle(),
     servicio.from("wallets").select("balance_cents").eq("user_id", userId).maybeSingle(),
-    servicio.auth.admin.getUserById(userId),
   ]);
 
   if (!perfil) return null;
@@ -174,7 +171,7 @@ async function buscarUsuariosPorId(userId: string): Promise<ResumenUsuario | nul
     id: perfil.id,
     memberId: perfil.member_id,
     nombre: [perfil.first_name, perfil.last_name].filter(Boolean).join(" ") || "—",
-    email: usuario.data.user?.email ?? null,
+    email: perfil.email,
     telefono: perfil.phone,
     puntos: Number(lealtad?.points_balance ?? 0),
     nivel: lealtad?.tier ?? "semilla",
@@ -245,63 +242,166 @@ export async function listarPedidos(limite = 50): Promise<PedidoGiftCard[]> {
 
 /* ── Auditoría ───────────────────────────────────────────────────────────── */
 
+/** Quién hizo algo o a quién se lo hicieron, en legible. */
+export type Persona = { id: string; nombre: string; email: string | null };
+
 export type EntradaAuditoria = {
   id: string;
   accion: string;
   entidad: string;
   motivo: string | null;
-  actor: string | null;
-  objetivo: string | null;
+  actor: Persona | null;
+  objetivo: Persona | null;
   antes: Record<string, unknown> | null;
   despues: Record<string, unknown> | null;
   requestId: string | null;
   fecha: string;
 };
 
-export async function listarAuditoria(limite = 100): Promise<EntradaAuditoria[]> {
+export type PaginaAuditoria = {
+  entradas: EntradaAuditoria[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+};
+
+/**
+ * Rastro de acciones administrativas, con las personas resueltas.
+ *
+ * Antes devolvía `actor_user_id` a secas —un UUID— y la página ni lo pintaba.
+ * Un registro de auditoría que no dice quién hizo el cambio no sirve para lo
+ * único que existe: saber quién tocó el dinero de un cliente.
+ *
+ * Se resuelven en una segunda consulta acotada a los ids que aparecen en la
+ * página. No se puede anidar desde PostgREST porque `audit_logs.actor_user_id`
+ * apunta a `auth.users`, no a `profiles`.
+ */
+export async function listarAuditoria(
+  pagina = 1,
+  porPagina = 50,
+  filtroAccion?: string
+): Promise<PaginaAuditoria> {
   const servicio = crearClienteServicio();
-  const { data } = await servicio
+  const paginaSegura = Math.max(1, Math.trunc(pagina));
+  const desde = (paginaSegura - 1) * porPagina;
+
+  let consulta = servicio
     .from("audit_logs")
     .select(
-      "id, action, entity_type, reason, actor_user_id, target_user_id, before_data, after_data, request_id, created_at"
+      "id, action, entity_type, reason, actor_user_id, target_user_id, before_data, after_data, request_id, created_at",
+      { count: "exact" }
     )
     .order("created_at", { ascending: false })
-    .limit(limite);
+    // Desempate estable: dos entradas del mismo segundo empatan, y sin segundo
+    // criterio la paginación puede repetir una y saltarse otra.
+    .order("id", { ascending: false })
+    .range(desde, desde + porPagina - 1);
 
-  return (data ?? []).map((l) => ({
-    id: l.id,
-    accion: l.action,
-    entidad: l.entity_type,
-    motivo: l.reason,
-    actor: l.actor_user_id,
-    objetivo: l.target_user_id,
-    antes: l.before_data,
-    despues: l.after_data,
-    requestId: l.request_id,
-    fecha: l.created_at,
-  }));
+  if (filtroAccion) consulta = consulta.eq("action", filtroAccion);
+
+  const { data, count } = await consulta;
+  const filas = data ?? [];
+
+  const ids = [
+    ...new Set(
+      filas.flatMap((l) => [l.actor_user_id, l.target_user_id]).filter((x): x is string => Boolean(x))
+    ),
+  ];
+
+  const personas = new Map<string, Persona>();
+  if (ids.length > 0) {
+    const { data: perfiles } = await servicio
+      .from("profiles")
+      .select("id, first_name, last_name, email")
+      .in("id", ids);
+
+    for (const p of perfiles ?? []) {
+      personas.set(p.id, {
+        id: p.id,
+        // Si la cuenta se borró, el perfil ya no está: se enseña el id en vez
+        // de una fila vacía. El rastro sobrevive a la cuenta a propósito.
+        nombre: [p.first_name, p.last_name].filter(Boolean).join(" ") || "—",
+        email: p.email,
+      });
+    }
+  }
+
+  const resolver = (id: string | null): Persona | null =>
+    id ? (personas.get(id) ?? { id, nombre: "Cuenta eliminada", email: null }) : null;
+
+  return {
+    total: count ?? 0,
+    pagina: paginaSegura,
+    porPagina,
+    entradas: filas.map((l) => ({
+      id: l.id,
+      accion: l.action,
+      entidad: l.entity_type,
+      motivo: l.reason,
+      actor: resolver(l.actor_user_id),
+      objetivo: resolver(l.target_user_id),
+      antes: l.before_data,
+      despues: l.after_data,
+      requestId: l.request_id,
+      fecha: l.created_at,
+    })),
+  };
 }
 
 /* ── Resumen ─────────────────────────────────────────────────────────────── */
 
-export async function obtenerResumen() {
+export type Resumen = {
+  miembros: number;
+  miembros7d: number;
+  miembros30d: number;
+  conMarketing: number;
+  correoConfirmado: number;
+  perfilVisitado: number;
+  saldoTotalCents: number;
+  walletsConSaldo: number;
+  puntosTotal: number;
+  pedidosTotales: number;
+  pedidosPagados: number;
+  giftcardsGmvCents: number;
+  giftcardsSinCanjear: number;
+  giftcardsBreakageCents: number;
+  suscriptores: number;
+  entradasAuditoria: number;
+};
+
+/**
+ * Foto del negocio. Todo agregado en SQL (`0013_metricas.sql`).
+ *
+ * La versión anterior hacía `.from("wallets").select("balance_cents")` y sumaba
+ * en JavaScript. El cliente de Supabase devuelve como mucho 1.000 filas, así
+ * que con 1.001 miembros el crédito en circulación empezaba a enseñar menos del
+ * real. Sin error y sin aviso, sobre el número que dice cuánto debe el negocio.
+ */
+export async function obtenerResumen(): Promise<Resumen> {
   const servicio = crearClienteServicio();
 
-  const [miembros, saldos, pedidos, ajustes] = await Promise.all([
-    servicio.from("profiles").select("id", { count: "exact", head: true }),
-    servicio.from("wallets").select("balance_cents"),
-    servicio.from("gift_card_orders").select("status"),
-    servicio.from("audit_logs").select("id", { count: "exact", head: true }),
-  ]);
+  const { data, error } = await servicio.rpc("metricas_resumen").single();
+  if (error || !data) throw new Error(`No se pudo leer el resumen: ${error?.message}`);
 
-  const totalSaldo = (saldos.data ?? []).reduce((s, w) => s + Number(w.balance_cents), 0);
-  const pagados = (pedidos.data ?? []).filter((p) => p.status === "paid").length;
+  const d = data as Record<string, string | number>;
+  const n = (clave: string) => Number(d[clave] ?? 0);
 
   return {
-    miembros: miembros.count ?? 0,
-    saldoTotalCents: totalSaldo,
-    pedidosTotales: pedidos.data?.length ?? 0,
-    pedidosPagados: pagados,
-    entradasAuditoria: ajustes.count ?? 0,
+    miembros: n("miembros"),
+    miembros7d: n("miembros_7d"),
+    miembros30d: n("miembros_30d"),
+    conMarketing: n("con_marketing"),
+    correoConfirmado: n("correo_confirmado"),
+    perfilVisitado: n("perfil_visitado"),
+    saldoTotalCents: n("saldo_total_cents"),
+    walletsConSaldo: n("wallets_con_saldo"),
+    puntosTotal: n("puntos_total"),
+    pedidosTotales: n("pedidos_totales"),
+    pedidosPagados: n("pedidos_pagados"),
+    giftcardsGmvCents: n("giftcards_gmv_cents"),
+    giftcardsSinCanjear: n("giftcards_sin_canjear"),
+    giftcardsBreakageCents: n("giftcards_breakage_cents"),
+    suscriptores: n("suscriptores"),
+    entradasAuditoria: n("entradas_auditoria"),
   };
 }

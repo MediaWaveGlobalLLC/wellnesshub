@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { exito, fallo, nuevoRequestId } from "@/lib/api/respuesta";
 import { ajustarPuntos, exigirAdmin } from "@/lib/services/admin-service";
 import { ajustePuntosSchema, usuarioIdSchema } from "@/lib/validation/admin";
+import { enMinutos, limitar } from "@/lib/seguridad/rate-limit";
 
 /**
  * POST /api/admin/users/:id/points-adjustment — `docs/05`.
@@ -20,6 +21,21 @@ export async function POST(request: NextRequest, contexto: { params: Promise<{ i
       status: 403,
       requestId,
     });
+  }
+
+  /*
+    Freno de mano. Estos endpoints mueven dinero de clientes y hasta ahora no
+    tenían ninguno: una sesión de administración robada podía vaciar cuentas a
+    la velocidad que diera la red. El cupo va por actor, no por IP: quien manda
+    es quién firma el ajuste.
+  */
+  const veredicto = await limitar("admin_ajuste", actor.id);
+  if (!veredicto.permitido) {
+    return fallo(
+      "demasiados_ajustes",
+      `Demasiados ajustes seguidos. Espera ${enMinutos(veredicto.reintentarEn)} minutos.`,
+      { status: 429, requestId }
+    );
   }
 
   const { id } = await contexto.params;

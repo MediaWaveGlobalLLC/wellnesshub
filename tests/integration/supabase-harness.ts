@@ -35,10 +35,20 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role bypassrls; end if;
 end $$;
 
--- Subconjunto de auth.users: solo lo que tocan el trigger y las FKs.
+-- Subconjunto de auth.users: lo que tocan el trigger, las FKs y las métricas.
+--
+-- Sin acentos graves en este bloque: es una plantilla de JavaScript y cerrarían
+-- la cadena a mitad.
+--
+-- email_confirmed_at y last_sign_in_at los mantiene Supabase, no nosotros, pero
+-- existen en la tabla real y las consultas de administración los leen. Sin ellos
+-- aquí, una métrica que funciona en producción falla en los tests — o peor, se
+-- escribe dando por hecho que no están disponibles.
 create table if not exists auth.users (
   id uuid primary key default gen_random_uuid(),
   email text unique,
+  email_confirmed_at timestamptz,
+  last_sign_in_at timestamptz,
   raw_user_meta_data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );

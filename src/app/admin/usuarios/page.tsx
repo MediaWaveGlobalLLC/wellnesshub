@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 
 import { Card, Badge } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
+import { Celda, Fila, Tabla } from "@/components/admin/ui/Tabla";
+import { Paginacion } from "@/components/admin/ui/Paginacion";
 import { exigirAdmin } from "@/lib/services/admin-service";
 import { buscarUsuarios } from "@/lib/services/admin-consultas";
 import { formatearDolares, formatearPuntos } from "@/lib/loyalty";
@@ -20,13 +22,16 @@ export const dynamic = "force-dynamic";
 export default async function UsuariosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; pagina?: string }>;
 }) {
   if (!(await exigirAdmin())) redirect("/");
 
-  const { q } = await searchParams;
+  const { q, pagina } = await searchParams;
   const consulta = (q ?? "").trim();
-  const usuarios = await buscarUsuarios(consulta);
+  // Una página que no es número cae a la primera, en vez de propagar un NaN
+  // hasta el OFFSET de la consulta.
+  const numeroPagina = Number.parseInt(pagina ?? "1", 10) || 1;
+  const { usuarios, total, porPagina } = await buscarUsuarios(consulta, numeroPagina);
 
   return (
     <>
@@ -52,8 +57,8 @@ export default async function UsuariosPage({
 
       <p className="mt-3 text-xs text-text-muted">
         {consulta
-          ? `${usuarios.length} resultado${usuarios.length === 1 ? "" : "s"} para «${consulta}»`
-          : "Mostrando las cuentas más recientes."}
+          ? `${total} resultado${total === 1 ? "" : "s"} para «${consulta}»`
+          : `${total} cuenta${total === 1 ? "" : "s"}, de la más reciente a la más antigua.`}
       </p>
 
       {usuarios.length === 0 ? (
@@ -64,46 +69,53 @@ export default async function UsuariosPage({
           />
         </Card>
       ) : (
-        <ul className="mt-6 space-y-3">
-          {usuarios.map((u) => (
-            <li key={u.id}>
-              <Link href={`/admin/usuarios/${u.id}`} className="block">
-                <Card className="p-5 transition-colors hover:border-terracota/40">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-display text-lg text-espresso">{u.nombre}</p>
-                      <p className="mt-0.5 truncate text-sm text-text-muted">
-                        {u.email ?? "sin correo"}
-                        {u.telefono ? ` · ${formatearTelefono(u.telefono)}` : ""}
-                      </p>
-                      <p className="mt-1 font-display text-sm text-text-muted">{u.memberId}</p>
-                    </div>
+        <Card className="mt-6 p-5 sm:p-6">
+          <Tabla
+            descripcion={`Cuentas de socios${consulta ? ` que coinciden con ${consulta}` : ""}`}
+            columnas={[
+              { clave: "socio", titulo: "Socio" },
+              { clave: "contacto", titulo: "Contacto", secundaria: true },
+              { clave: "nivel", titulo: "Nivel", secundaria: true },
+              { clave: "puntos", titulo: "Puntos", numerica: true },
+              { clave: "credito", titulo: "Crédito", numerica: true },
+            ]}
+          >
+            {usuarios.map((u) => (
+              <Fila key={u.id}>
+                <Celda principal>
+                  <Link
+                    href={`/admin/usuarios/${u.id}`}
+                    className="underline decoration-terracota decoration-2 underline-offset-4 transition-colors hover:text-primary-hover"
+                  >
+                    {u.nombre}
+                  </Link>
+                  <span className="mt-0.5 block font-display text-xs text-text-muted">
+                    {u.memberId}
+                  </span>
+                </Celda>
+                <Celda secundaria>
+                  <span className="block truncate">{u.email ?? "sin correo"}</span>
+                  {u.telefono && (
+                    <span className="mt-0.5 block text-xs">{formatearTelefono(u.telefono)}</span>
+                  )}
+                </Celda>
+                <Celda secundaria>
+                  <Badge tono="exito">{u.nivel}</Badge>
+                </Celda>
+                <Celda numerica>{formatearPuntos(u.puntos)}</Celda>
+                <Celda numerica>{formatearDolares(u.saldoCents)}</Celda>
+              </Fila>
+            ))}
+          </Tabla>
 
-                    <div className="flex items-center gap-5">
-                      <div className="text-right">
-                        <p className="text-[0.65rem] uppercase tracking-[0.12em] text-text-muted">
-                          Puntos
-                        </p>
-                        <p className="font-display text-lg text-espresso">
-                          {formatearPuntos(u.puntos)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[0.65rem] uppercase tracking-[0.12em] text-text-muted">
-                          Crédito
-                        </p>
-                        <p className="font-display text-lg text-espresso">
-                          {formatearDolares(u.saldoCents)}
-                        </p>
-                      </div>
-                      <Badge tono="exito">{u.nivel}</Badge>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
+          <Paginacion
+            pagina={numeroPagina}
+            porPagina={porPagina}
+            total={total}
+            base="/admin/usuarios"
+            parametros={{ q: consulta || undefined }}
+          />
+        </Card>
       )}
     </>
   );
