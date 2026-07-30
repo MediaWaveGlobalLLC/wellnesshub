@@ -61,7 +61,8 @@ describe("alta de usuario — trigger handle_new_user", () => {
     );
     const ids = r.rows.map((x) => x.member_id);
     expect(ids).toHaveLength(2);
-    for (const m of ids) expect(m).toMatch(/^SMB-/);
+    // Formato del mockup 02: SMB- + seis dígitos, dictable en caja (migración 0003).
+    for (const m of ids) expect(m).toMatch(/^SMB-\d{6}$/);
     expect(new Set(ids).size).toBe(2);
   });
 
@@ -79,21 +80,60 @@ describe("alta de usuario — trigger handle_new_user", () => {
   });
 });
 
-describe("columnas de identidad protegidas (migración 0002)", () => {
-  it("ignora un intento de cambiar member_id", async () => {
+describe("columnas de identidad protegidas (migraciones 0002 y 0004)", () => {
+  it("ignora el intento de un usuario de cambiar su member_id", async () => {
     const id = await crearUsuario(db, { email: "id@example.com" });
     const antes = await db.query<{ member_id: string }>(
       "select member_id from public.profiles where id = $1",
       [id]
     );
 
-    await db.query("update public.profiles set member_id = 'SMB-HACKEADO' where id = $1", [id]);
+    await comoUsuario(db, id, async () => {
+      await db
+        .query("update public.profiles set member_id = 'SMB-999999' where id = $1", [id])
+        .catch(() => undefined);
+    });
 
     const despues = await db.query<{ member_id: string }>(
       "select member_id from public.profiles where id = $1",
       [id]
     );
     expect(despues.rows[0].member_id).toBe(antes.rows[0].member_id);
+  });
+
+  /*
+   * Regresión: la primera versión del trigger restauraba las columnas en
+   * CUALQUIER update, así que revertía también el mantenimiento del servidor.
+   * El backfill de member_id de 0003 se ejecutó sin error y sin efecto.
+   */
+  it("deja que el servidor sí actualice columnas de identidad", async () => {
+    const id = await crearUsuario(db, { email: "srv@example.com" });
+
+    await db.query("update public.profiles set member_id = 'SMB-000042' where id = $1", [id]);
+
+    const r = await db.query<{ member_id: string }>(
+      "select member_id from public.profiles where id = $1",
+      [id]
+    );
+    expect(r.rows[0].member_id).toBe("SMB-000042");
+  });
+
+  it("sigue refrescando updated_at en cada cambio", async () => {
+    const id = await crearUsuario(db, { email: "upd@example.com" });
+    const antes = await db.query<{ updated_at: string }>(
+      "select updated_at from public.profiles where id = $1",
+      [id]
+    );
+
+    await db.query("update public.profiles set first_name = 'Nuevo' where id = $1", [id]);
+
+    const despues = await db.query<{ updated_at: string }>(
+      "select updated_at from public.profiles where id = $1",
+      [id]
+    );
+    expect(new Date(despues.rows[0].updated_at).getTime()).toBeGreaterThanOrEqual(
+      new Date(antes.rows[0].updated_at).getTime()
+    );
   });
 });
 
