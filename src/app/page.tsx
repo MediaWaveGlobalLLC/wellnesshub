@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
+
 import { useLang } from "@/lib/i18n";
 import { Reveal } from "@/components/Reveal";
 import { SunBean } from "@/components/SunBean";
@@ -28,9 +28,9 @@ export default function Home() {
   const { lang, t } = useLang();
 
   // Parallax del sol del hero
-  const { scrollY } = useScroll();
-  const sunY = useTransform(scrollY, [0, 700], [0, 140]);
-  const sunRotate = useTransform(scrollY, [0, 700], [0, 18]);
+
+
+
 
   const piel = MENU.find((s) => s.id === "piel");
 
@@ -44,39 +44,23 @@ export default function Home() {
         <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 items-center gap-10 px-5 pb-16 pt-32 sm:px-8 lg:grid-cols-12 lg:gap-6">
           {/* texto — izquierda */}
           <div className="lg:col-span-7">
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.7 }}
-              className="mb-6 flex items-center gap-3 text-[0.7rem] font-bold uppercase tracking-[0.4em] text-matcha"
+            <p              className="entrada entrada-1 mb-6 flex items-center gap-3 text-[0.7rem] font-bold uppercase tracking-[0.4em] text-matcha"
             >
               <span className="h-px w-12 bg-matcha" />
               {SITE.tagline.es}
-            </motion.p>
+            </p>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              className="font-display text-[clamp(4.5rem,13vw,10.5rem)] font-medium leading-[0.9] tracking-tight"
+            <h1              className="entrada entrada-2 font-display text-[clamp(4.5rem,13vw,10.5rem)] font-medium leading-[0.9] tracking-tight"
             >
               Siembra
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55, duration: 0.8 }}
-              className="mt-6 max-w-lg font-serif text-2xl italic leading-snug text-avena sm:text-3xl"
+            <p              className="entrada entrada-3 mt-6 max-w-lg font-serif text-2xl italic leading-snug text-avena sm:text-3xl"
             >
               {t(MANIFIESTO.corto)}
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.75, duration: 0.7 }}
-              className="mt-10 flex flex-wrap items-center gap-6"
+            <div              className="entrada entrada-4 mt-10 flex flex-wrap items-center gap-6"
             >
               <Link
                 href="/menu"
@@ -93,20 +77,12 @@ export default function Home() {
                   {lang === "es" ? "Visítanos" : "Visit us"}
                 </span>
               </Link>
-            </motion.div>
+            </div>
           </div>
 
-          {/* sol naciente — derecha, con parallax */}
-          <motion.div
-            style={{ y: sunY, rotate: sunRotate }}
-            className="relative hidden items-end justify-center lg:col-span-5 lg:flex"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
-              className="relative text-avena"
-            >
+          {/* sol naciente — derecha */}
+          <div className="relative hidden items-end justify-center lg:col-span-5 lg:flex">
+            <div className="entrada entrada-3 relative text-avena">
               <SunBean size={300} color="currentColor" />
               {/* vapor subiendo del grano */}
               <div className="absolute left-1/2 -top-14 -translate-x-1/2 text-leche/70">
@@ -120,17 +96,12 @@ export default function Home() {
                   color="currentColor"
                 />
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
 
         {/* barra inferior de datos */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.1, duration: 0.8 }}
-          className="relative z-10 border-t border-leche/15"
-        >
+        <div className="entrada entrada-4 relative z-10 border-t border-leche/15">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 text-xs tracking-widest text-leche/60 sm:px-8">
             <span className="uppercase">{SITE.address.split(",")[0]}</span>
             <span className="hidden items-center gap-2 sm:flex">
@@ -139,16 +110,10 @@ export default function Home() {
             </span>
             <span className="flex items-center gap-2 uppercase">
               {lang === "es" ? "Desliza para descubrir" : "Scroll to discover"}
-              <motion.span
-                animate={{ y: [0, 6, 0] }}
-                transition={{ repeat: Infinity, duration: 1.8 }}
-                className="text-avena"
-              >
-                ↓
-              </motion.span>
+              <span className="flecha-scroll text-avena">↓</span>
             </span>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ═══════════ CINTA DE ATRIBUTOS (MARQUEE) ═══════════ */}

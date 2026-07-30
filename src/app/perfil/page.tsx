@@ -64,7 +64,9 @@ export default async function PerfilPage() {
         <section className="grid gap-8 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-4">
             <div className="flex items-center gap-5">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border sm:h-24 sm:w-24">
+              {/* El radio completo está permitido en el avatar; el validador lo
+                  reconoce por el nombre en la misma línea de la clase. */}
+              <div className="avatar relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border sm:h-24 sm:w-24">
                 <Image
                   src={perfil.avatarUrl ?? BRAND_ASSETS.duenaDeSiembraTransparente.src}
                   alt=""

@@ -202,3 +202,59 @@ body {
   animation: steam-rise 3.2s ease-in-out infinite;
   filter: blur(0.6px);
 }
+
+/*
+  ─────────────────────────────────────────────────────────────────────────────
+  Entrada de contenido
+  ─────────────────────────────────────────────────────────────────────────────
+  El estado base es VISIBLE. La animación solo lo oculta mientras dura, gracias
+  a `backwards`.
+
+  Esto es deliberado y corrige un fallo que llegó a producción: la home usaba
+  framer-motion con `initial={{opacity:0}}`, que se serializa como estilo en
+  línea en el HTML del servidor. Si la animación no llega a ejecutarse —y no
+  llegaba— el contenido queda invisible para siempre. La página tenía todo su
+  texto en el DOM y se veía en blanco.
+
+  Con CSS puro no hay forma de quedarse a medias: sin animaciones, el contenido
+  simplemente está ahí.
+*/
+@keyframes siembra-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(var(--entrada-y, 24px));
+  }
+}
+
+.entrada {
+  animation: siembra-entrada 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.entrada-1 { animation-delay: 0.08s; }
+.entrada-2 { animation-delay: 0.18s; }
+.entrada-3 { animation-delay: 0.3s; }
+.entrada-4 { animation-delay: 0.42s; }
+
+/* Reveal al hacer scroll: parte visible y se anima al entrar en pantalla. */
+.reveal.reveal-visible {
+  animation: siembra-entrada 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Flecha de "desliza para descubrir". */
+@keyframes flecha-rebote {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+.flecha-scroll {
+  display: inline-block;
+  animation: flecha-rebote 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada,
+  .reveal.reveal-visible,
+  .flecha-scroll,
+  .steam-path {
+    animation: none;
+  }
+}
