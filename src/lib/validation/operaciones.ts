@@ -24,6 +24,32 @@ export const reactivarGiftCardSchema = anularGiftCardSchema;
 
 export const rotarCodigoSchema = anularGiftCardSchema;
 
+/**
+ * Tope por recarga. El mismo que el ajuste de wallet y por la misma razón: no
+ * es una regla de negocio, es un freno ante un dedo torpe. `0019` lo repite en
+ * SQL, que es donde de verdad no se puede saltar.
+ */
+export const TOPE_RECARGA_CENTAVOS = 500_000;
+
+/**
+ * Recarga de una tarjeta — `0019_gift_cards_recargables.sql`.
+ *
+ * Esto añade saldo sin ningún cobro detrás, así que lleva los mismos frenos que
+ * un ajuste de wallet: solo la dueña, motivo obligatorio y tope por operación.
+ */
+export const recargaGiftCardSchema = z.object({
+  giftCardId: z.string().uuid(),
+  amountCents: z
+    .number({ message: "Escribe cuánto saldo añadir." })
+    .int("Los importes van en centavos enteros, nunca decimales.")
+    .positive("La recarga tiene que ser mayor que cero.")
+    .max(
+      TOPE_RECARGA_CENTAVOS,
+      `Una sola recarga no puede superar $${TOPE_RECARGA_CENTAVOS / 100}.`
+    ),
+  reason: motivo,
+});
+
 /* ── Eventos ─────────────────────────────────────────────────────────────── */
 
 /**

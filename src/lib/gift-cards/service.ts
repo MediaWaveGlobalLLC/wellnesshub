@@ -170,21 +170,42 @@ export async function emitirPorPago(
 /* ── Canje ───────────────────────────────────────────────────────────────── */
 
 export type ResultadoCanje =
-  | { ok: true; creditedCents: number; newBalanceCents: number; receiptId: string }
+  | {
+      ok: true;
+      creditedCents: number;
+      newBalanceCents: number;
+      receiptId: string;
+      /** Lo que queda EN LA TARJETA después del canje. 0 = agotada. */
+      cardBalanceCents: number;
+    }
   | { ok: false; codigo: string; mensaje: string };
 
 const ERRORES_CANJE: Record<string, string> = {
   codigo_invalido: "Ese código no es válido. Revísalo e inténtalo de nuevo.",
-  ya_canjeada: "Esta gift card ya fue canjeada.",
+  ya_canjeada: "Esta gift card ya no tiene saldo.",
   cancelada: "Esta gift card fue cancelada. Escríbenos y lo revisamos.",
   expirada: "Esta gift card expiró.",
+  saldo_insuficiente: "La tarjeta no tiene tanto saldo. Prueba con menos.",
+  importe_invalido: "El importe tiene que ser mayor que cero.",
 };
 
 /** Ventana y tope del rate limit — `docs/06`. */
 const VENTANA_MINUTOS = 15;
 const INTENTOS_MAXIMOS = 8;
 
-export async function canjear(codigoEntrada: string, ip: string | null): Promise<ResultadoCanje> {
+/**
+ * Canjea una tarjeta, entera o por partes.
+ *
+ * `centavos` a null significa «todo el saldo». `clientRequestId` lo genera el
+ * navegador por intento de envío y es lo que evita que un reintento acredite
+ * dos veces; si no llega, el canje funciona igual pero pierde esa protección.
+ */
+export async function canjear(
+  codigoEntrada: string,
+  ip: string | null,
+  centavos: number | null = null,
+  clientRequestId: string | null = null
+): Promise<ResultadoCanje> {
   const supabase = await crearClienteServidor();
   const {
     data: { user },
@@ -233,6 +254,8 @@ export async function canjear(codigoEntrada: string, ip: string | null): Promise
   const { data, error } = await servicio.rpc("canjear_gift_card", {
     p_user_id: user.id,
     p_code_hash: hashCodigo(normalizado),
+    p_amount_cents: centavos,
+    p_client_request_id: clientRequestId,
   });
 
   if (error) {
@@ -253,5 +276,6 @@ export async function canjear(codigoEntrada: string, ip: string | null): Promise
     creditedCents: Number(fila.credited_cents),
     newBalanceCents: Number(fila.new_balance_cents),
     receiptId: fila.receipt_id,
+    cardBalanceCents: Number(fila.card_balance_cents),
   };
 }

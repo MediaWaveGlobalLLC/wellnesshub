@@ -7,6 +7,7 @@ import { actorPuede, exigirAdmin, exigirDuena } from "@/lib/services/admin-servi
 import { enMinutos, limitar } from "@/lib/seguridad/rate-limit";
 import { nuevoRequestId } from "@/lib/api/respuesta";
 import { generarCodigo, hashCodigo, pepperConfigurado } from "@/lib/gift-cards/codigo";
+import { formatearDolares } from "@/lib/loyalty";
 import {
   anularGiftCardSchema,
   aplicarReglaSchema,
@@ -19,6 +20,7 @@ import {
   editarReglaSchema,
   publicarEventoSchema,
   reactivarGiftCardSchema,
+  recargaGiftCardSchema,
   revocarAdminSchema,
   rotarCodigoSchema,
   slugDeEvento,
@@ -68,6 +70,10 @@ function traducir(mensaje: string): string {
     ["tarjeta_no_activa", "Solo se puede cambiar el código de una tarjeta activa."],
     ["hash_invalido", "El código no se generó correctamente. Vuelve a intentarlo."],
     ["last4_invalido", "El código no se generó correctamente. Vuelve a intentarlo."],
+    ["tarjeta_anulada", "Esa tarjeta está anulada. Reactívala antes de recargarla."],
+    ["tarjeta_caducada", "Esa tarjeta caducó: recargarla no la haría canjeable."],
+    ["importe_excesivo", "Una sola recarga no puede superar $5.000."],
+    ["importe_invalido", "El importe tiene que ser mayor que cero."],
     // Eventos.
     ["evento_no_encontrado", "Ese evento ya no existe."],
     ["slug_duplicado", "Ya hay un evento con ese título."],
@@ -223,6 +229,43 @@ export async function rotarCodigoGiftCard(datos: unknown): Promise<ResultadoCodi
     mensaje: "Código nuevo generado. El anterior ya no sirve.",
     codigo,
     last4,
+  };
+}
+
+/**
+ * Añade saldo a una tarjeta.
+ *
+ * Crea crédito sin ningún cobro detrás, así que va por el mismo carril que un
+ * ajuste de wallet: solo la dueña, motivo obligatorio y tope por operación. La
+ * función SQL vuelve a comprobar las tres cosas.
+ *
+ * Sobre una agotada, la revive: el código de siempre vuelve a servir.
+ */
+export async function recargarGiftCard(datos: unknown): Promise<Resultado> {
+  const parsed = recargaGiftCardSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { data, error } = await crearClienteServicio().rpc("admin_gift_card_recargar", {
+    p_actor_id: ctx.actor.id,
+    p_gift_card_id: parsed.data.giftCardId,
+    p_amount_cents: parsed.data.amountCents,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidatePath("/admin/gift-cards");
+
+  const fila = Array.isArray(data) ? data[0] : null;
+  const saldo = Number(fila?.saldo_cents ?? 0);
+
+  return {
+    ok: true,
+    mensaje: `Recargada. La tarjeta tiene ahora ${formatearDolares(saldo)} y su código vuelve a servir.`,
   };
 }
 

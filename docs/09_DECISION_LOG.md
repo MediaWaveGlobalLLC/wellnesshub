@@ -65,6 +65,25 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 
 - **Pendiente de dato externo:** los umbrales de nivel no existen en ninguna fuente. Se siembran como datos editables (`loyalty_tiers`: 0 / 500 / 2.000 / 5.000) usando el único ancla del mockup 02 (brote = 750 pts, siguiente nivel = 2.000). El cliente los ajusta en una fila.
 
+### DEC-006 — Las gift cards pasan a tener saldo recargable
+
+- **Estado:** aprobada (decisión del dueño del negocio; ver «Aprobación»)
+- **Contexto:** una tarjeta era un cheque de un solo uso: un importe, un canje y se acabó. No había forma de gastarla en dos visitas ni de añadirle saldo, y el panel no ofrecía nada entre «anular» y «emitir código nuevo».
+- **Decisión:** `gift_cards` gana `balance_cents` (saldo vivo) junto a `amount_cents` (importe emitido, inmutable). El canje pasa a ser un débito parcial y la dueña puede recargar. Migración `0019_gift_cards_recargables.sql`.
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Destino del canje | Sigue siendo el wallet, pero por partes | No toca checkout ni mostrador; el wallet ya es el instrumento de gasto |
+  | Quién recarga | Solo la dueña, desde el panel | Crea crédito sin cobro detrás: mismo carril que `admin_ajustar_wallet` —rol en SQL, motivo, tope de $5.000, auditoría |
+  | Tarjeta agotada | Recargarla la revive con el mismo código | Un cliente habitual conserva una sola tarjeta |
+  | `redeemed_by_user_id` | Pasa a significar «quién la agotó» | Con canje parcial la tarjeta pasa por varias manos; el rastro completo está en `wallet_transactions` |
+  | Pasivo pendiente | `metricas_resumen` suma `balance_cents`, no `amount_cents` | Una tarjeta de $100 con $10 dentro inflaba el pasivo nueve veces |
+
+- **Alternativas consideradas:** convertir la tarjeta en instrumento de pago directo contra caja (descartada: exige un flujo de cobro que hoy no existe) y recarga pagada por Stripe (descartada por ahora: toda acreditación con dinero detrás tiene que entrar por webhook, `docs/06`, y eso es un checkout nuevo).
+- **Consecuencias — la que importa:** cambia la clave de idempotencia del ledger. Era `giftcard:<id>`, que hacía que un segundo canje del mismo código nunca acreditara dos veces. Con varios créditos legítimos por tarjeta esa clave deja de servir, así que pasa a `giftcard:<id>:<usuario>:<peticion>`, con `<peticion>` generada por el navegador una vez por intento de envío. Sin el `<usuario>` dentro, dos personas que comparten un código y mandan el mismo identificador colisionarían y la segunda recibiría el movimiento de la primera. La comprobación de idempotencia va **antes** de descontar el saldo: al revés, la tarjeta perdería dinero sin que nadie lo recibiera.
+- **Otras consecuencias:** `balance_cents` es `not null` y **sin default**, a propósito: un INSERT que se olvide de declarar el saldo falla en vez de crear una tarjeta vacía y canjeable. `gift_cards.status = 'redeemed'` pasa a leerse «sin saldo» y en el panel se muestra así.
+- **Aprobación:** el dueño del negocio, en sesión de 2026-07-31, sobre las tres decisiones de la tabla.
+
 ## Plantilla
 
 ```md

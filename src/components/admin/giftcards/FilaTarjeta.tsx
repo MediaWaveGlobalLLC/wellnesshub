@@ -10,6 +10,7 @@ import { CheckIcon, LapizIcon } from "@/components/icons";
 import {
   anularGiftCard,
   reactivarGiftCard,
+  recargarGiftCard,
   rotarCodigoGiftCard,
   type Resultado,
   type ResultadoCodigo,
@@ -19,16 +20,21 @@ import { formatearDolares } from "@/lib/loyalty";
 /**
  * Un pedido de gift card, con lo que se puede hacerle.
  *
- * Las tres acciones son de las que no se deshacen solas, así que las tres piden
- * motivo escrito y ninguna se dispara con un solo clic.
+ * Las cuatro acciones son de las que no se deshacen solas, así que las cuatro
+ * piden motivo escrito y ninguna se dispara con un solo clic.
  */
+
+type Accion = "anular" | "reactivar" | "rotar" | "recargar";
 
 export type Tarjeta = {
   id: string | null;
   pedidoId: string;
   estadoPedido: string;
   estadoTarjeta: string | null;
+  /** Lo que se emitió y se cobró. No cambia nunca. */
   centavos: number;
+  /** Lo que queda por gastar. `null` si el pedido no llegó a emitir tarjeta. */
+  saldoCents: number | null;
   formato: string;
   destinatario: string;
   correoDestinatario: string | null;
@@ -56,7 +62,9 @@ const TONO_TARJETA: Record<string, "exito" | "aviso" | "peligro" | "neutro"> = {
 
 const NOMBRE_TARJETA: Record<string, string> = {
   active: "Activa",
-  redeemed: "Canjeada",
+  // Desde 0019 una tarjeta se gasta por partes: 'redeemed' es quedarse sin
+  // saldo, no haberla usado una vez.
+  redeemed: "Sin saldo",
   cancelled: "Anulada",
   expired: "Caducada",
 };
@@ -83,7 +91,7 @@ function fecha(iso: string): string {
 export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeOperar: boolean }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
-  const [abierto, setAbierto] = useState<"anular" | "reactivar" | "rotar" | null>(null);
+  const [abierto, setAbierto] = useState<Accion | null>(null);
   const [aviso, setAviso] = useState<{ tono: "ok" | "error"; texto: string } | null>(null);
   /* El código nuevo vive AQUÍ y en ningún otro sitio. Ver el aviso de abajo. */
   const [codigoNuevo, setCodigoNuevo] = useState<{ codigo: string; last4: string } | null>(null);
@@ -105,7 +113,15 @@ export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeO
 
   const activa = tarjeta.estadoTarjeta === "active";
   const anulada = tarjeta.estadoTarjeta === "cancelled";
+  const agotada = tarjeta.estadoTarjeta === "redeemed";
+  const caducada = tarjeta.estadoTarjeta === "expired";
   const hayTarjeta = tarjeta.id !== null;
+  // Recargar una anulada daría saldo a un código que no sirve, y una caducada
+  // no se canjea aunque tenga dinero. En ambos casos hay un paso previo.
+  const puedeRecargar = activa || agotada;
+  // Emitida por $50 y con $30 dentro: el importe de arriba ya no cuenta la
+  // historia completa.
+  const gastada = tarjeta.saldoCents !== null && tarjeta.saldoCents !== tarjeta.centavos;
 
   return (
     <li>
@@ -118,6 +134,15 @@ export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeO
                 {tarjeta.formato === "digital" ? "Digital" : "Física"}
               </span>
             </p>
+            {gastada && (
+              <p className="mt-0.5 text-sm text-espresso">
+                Saldo <strong>{formatearDolares(tarjeta.saldoCents!)}</strong>
+                <span className="text-text-muted">
+                  {" "}
+                  · emitida por {formatearDolares(tarjeta.centavos)}
+                </span>
+              </p>
+            )}
             <p className="mt-1 text-sm text-text-muted">
               Para {tarjeta.destinatario}
               {tarjeta.correoDestinatario ? ` · ${tarjeta.correoDestinatario}` : ""}
@@ -173,6 +198,18 @@ export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeO
               </>
             )}
 
+            {puedeRecargar && (
+              <Button
+                type="button"
+                size="md"
+                variant="secundario"
+                onClick={() => setAbierto(abierto === "recargar" ? null : "recargar")}
+                aria-expanded={abierto === "recargar"}
+              >
+                Recargar
+              </Button>
+            )}
+
             {anulada && (
               <Button
                 type="button"
@@ -185,10 +222,17 @@ export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeO
               </Button>
             )}
 
-            {tarjeta.estadoTarjeta === "redeemed" && (
+            {agotada && (
               <p className="text-xs leading-relaxed text-text-muted">
-                Ya se canjeó: el importe está en el saldo de quien la usó. Si hay que revertirlo, se
-                hace con un ajuste de saldo desde su ficha, no desde aquí.
+                Se gastó entera: lo que tenía está en el saldo de quien la usó. Recargarla la
+                devuelve a la vida con el mismo código. Para revertir un canje, en cambio, se
+                ajusta el saldo desde la ficha de esa persona, no desde aquí.
+              </p>
+            )}
+
+            {caducada && (
+              <p className="text-xs leading-relaxed text-text-muted">
+                Caducó. Recargarla no la haría canjeable.
               </p>
             )}
           </div>
@@ -199,11 +243,13 @@ export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeO
             accion={abierto}
             pendiente={pendiente}
             onCancelar={() => setAbierto(null)}
-            onEnviar={(reason) =>
+            onEnviar={(reason, importeCents) =>
               ejecutar(() => {
                 const datos = { giftCardId: tarjeta.id!, reason };
                 if (abierto === "anular") return anularGiftCard(datos);
                 if (abierto === "reactivar") return reactivarGiftCard(datos);
+                if (abierto === "recargar")
+                  return recargarGiftCard({ ...datos, amountCents: importeCents });
                 return rotarCodigoGiftCard(datos);
               })
             }
@@ -231,37 +277,79 @@ export function FilaTarjeta({ tarjeta, puedeOperar }: { tarjeta: Tarjeta; puedeO
   );
 }
 
-const TITULO: Record<string, string> = {
+const TITULO: Record<Accion, string> = {
   anular: "¿Por qué se anula?",
   reactivar: "¿Por qué se reactiva?",
   rotar: "¿Por qué hace falta un código nuevo?",
+  recargar: "¿Por qué se recarga?",
 };
 
-const BOTON: Record<string, string> = {
+const BOTON: Record<Accion, string> = {
   anular: "Anular tarjeta",
   reactivar: "Reactivar",
   rotar: "Generar código",
+  recargar: "Recargar",
 };
 
+/**
+ * Motivo obligatorio para todas; importe solo para la recarga.
+ *
+ * El importe se valida aquí para poder señalar el campo, en la server action
+ * con Zod y otra vez en SQL. Lo de aquí es cortesía; lo de SQL es lo que de
+ * verdad no se puede saltar.
+ */
 function FormularioMotivo({
   accion,
   pendiente,
   onEnviar,
   onCancelar,
 }: {
-  accion: "anular" | "reactivar" | "rotar";
+  accion: Accion;
   pendiente: boolean;
-  onEnviar: (reason: string) => void;
+  onEnviar: (reason: string, importeCents: number) => void;
   onCancelar: () => void;
 }) {
+  const [errorImporte, setErrorImporte] = useState<string | null>(null);
+  const esRecarga = accion === "recargar";
+
+  function enviar(fd: FormData) {
+    setErrorImporte(null);
+
+    let centavos = 0;
+    if (esRecarga) {
+      const escrito = String(fd.get("importe") ?? "").trim();
+      const dolares = Number(escrito.replace(",", "."));
+      if (!escrito || !Number.isFinite(dolares) || dolares <= 0) {
+        setErrorImporte("Escribe cuánto saldo añadir.");
+        return;
+      }
+      centavos = Math.round(dolares * 100);
+    }
+
+    onEnviar(String(fd.get("motivo") ?? ""), centavos);
+  }
+
   return (
     <form
       className="mt-3 flex flex-wrap items-end gap-3 rounded-lg bg-surface-muted p-3"
-      action={(fd) => onEnviar(String(fd.get("motivo") ?? ""))}
+      action={enviar}
     >
+      {esRecarga && (
+        <div className="w-40">
+          <Field
+            label="Cuánto añadir"
+            name="importe"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="25.00"
+            error={errorImporte ?? undefined}
+          />
+        </div>
+      )}
       <div className="min-w-[16rem] flex-1">
         <Field
-          label={TITULO[accion]!}
+          label={TITULO[accion]}
           name="motivo"
           required
           minLength={6}
