@@ -51,6 +51,25 @@ export const checkoutSchema = z
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
+/**
+ * Canje.
+ *
+ * `amountCents` ausente significa «todo el saldo que quede», que es el caso
+ * normal. El tope de aquí es un freno ante un dedo torpe, no la regla real: la
+ * que manda es el saldo de la tarjeta, y esa solo la conoce el servidor.
+ *
+ * `clientRequestId` lo genera el navegador una vez por intento de envío y es lo
+ * que hace idempotente el canje: un doble clic o un fetch reintentado repiten
+ * el identificador y no acreditan dos veces. Va con formato UUID para que un
+ * valor inventado no pueda parecerse a la clave de otra petición.
+ */
 export const canjeSchema = z.object({
   code: z.string().trim().min(1, "Escribe el código de tu gift card.").max(60),
+  amountCents: z
+    .number()
+    .int("El importe va en centavos enteros.")
+    .positive("El importe tiene que ser mayor que cero.")
+    .max(MONTO_MAXIMO, `De una vez puedes canjear como máximo $${MONTO_MAXIMO / 100}.`)
+    .optional(),
+  clientRequestId: z.string().uuid().optional(),
 });

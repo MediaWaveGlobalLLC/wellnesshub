@@ -36,7 +36,12 @@ export async function POST(request: NextRequest) {
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     request.headers.get("x-real-ip");
 
-  const resultado = await canjear(parsed.data.code, ip);
+  const resultado = await canjear(
+    parsed.data.code,
+    ip,
+    parsed.data.amountCents ?? null,
+    parsed.data.clientRequestId ?? null
+  );
 
   if (!resultado.ok) {
     const status =
@@ -53,6 +58,7 @@ export async function POST(request: NextRequest) {
       creditedCents: resultado.creditedCents,
       newBalanceCents: resultado.newBalanceCents,
       receiptId: resultado.receiptId,
+      cardBalanceCents: resultado.cardBalanceCents,
     },
     requestId
   );

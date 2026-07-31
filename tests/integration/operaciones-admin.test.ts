@@ -45,8 +45,13 @@ beforeEach(async () => {
   `);
 });
 
-/** Pedido pagado + tarjeta activa, que es de donde parte todo lo de gift cards. */
-async function crearTarjeta(hash = HASH_A, last4 = "WXYZ"): Promise<string> {
+/**
+ * Pedido pagado + tarjeta activa, que es de donde parte todo lo de gift cards.
+ *
+ * `balance_cents` se declara a mano porque desde 0019 la columna no tiene
+ * DEFAULT: una tarjeta sin saldo declarado es un error, no un cero.
+ */
+async function crearTarjeta(hash = HASH_A, last4 = "WXYZ", saldo = 5000): Promise<string> {
   const pedido = await db.query<{ id: string }>(
     `insert into public.gift_card_orders
        (purchaser_user_id, amount_cents, format, recipient_name, status, paid_at)
@@ -54,9 +59,9 @@ async function crearTarjeta(hash = HASH_A, last4 = "WXYZ"): Promise<string> {
     [cliente]
   );
   const card = await db.query<{ id: string }>(
-    `insert into public.gift_cards (order_id, code_hash, code_last4, amount_cents)
-     values ($1, $2, $3, 5000) returning id`,
-    [pedido.rows[0]!.id, hash, last4]
+    `insert into public.gift_cards (order_id, code_hash, code_last4, amount_cents, balance_cents)
+     values ($1, $2, $3, 5000, $4) returning id`,
+    [pedido.rows[0]!.id, hash, last4, saldo]
   );
   return card.rows[0]!.id;
 }
@@ -89,7 +94,12 @@ describe("gift cards", () => {
       historias distintas sobre el mismo dinero.
     */
     const id = await crearTarjeta();
-    await db.query("update public.gift_cards set status = 'redeemed' where id = $1", [id]);
+    // Agotada: sin saldo y marcada. Los dos a la vez, que es como la deja el
+    // canje que se lleva lo último que quedaba.
+    await db.query(
+      "update public.gift_cards set status = 'redeemed', balance_cents = 0 where id = $1",
+      [id]
+    );
 
     await expect(
       db.query("select * from public.admin_gift_card_anular($1, $2, 'Devolución')", [duena, id])
@@ -149,6 +159,96 @@ describe("gift cards", () => {
     await expect(
       db.query("select * from public.admin_gift_card_anular($1, $2, 'Motivo')", [empleado, id])
     ).rejects.toThrow(/no_autorizado/);
+  });
+
+  /* ── Recarga (0019) ───────────────────────────────────────────────────── */
+
+  const recargar = (id: string, centavos: number, actor = duena, motivo = "Cortesía") =>
+    db.query<{ saldo_cents: string; estado: string }>(
+      "select * from public.admin_gift_card_recargar($1, $2, $3, $4)",
+      [actor, id, centavos, motivo]
+    );
+
+  it("recargar suma al saldo y no toca el importe emitido", async () => {
+    const id = await crearTarjeta(HASH_A, "WXYZ", 3000);
+    const r = await recargar(id, 2500);
+
+    expect(Number(r.rows[0]!.saldo_cents)).toBe(5500);
+
+    const fila = await leerFresco<{ balance_cents: string; amount_cents: string }>(
+      db,
+      "select balance_cents, amount_cents from public.gift_cards where id = $1",
+      [id]
+    );
+    expect(Number(fila[0]!.balance_cents)).toBe(5500);
+    // `amount_cents` es lo que se cobró por Stripe: no se mueve nunca.
+    expect(Number(fila[0]!.amount_cents)).toBe(5000);
+    expect(await auditoria("gift_card_recargada")).toBe(1);
+  });
+
+  it("recargar una agotada la devuelve a la vida con el mismo código", async () => {
+    const id = await crearTarjeta(HASH_A, "WXYZ", 0);
+    await db.query(
+      "update public.gift_cards set status = 'redeemed', redeemed_at = now(), redeemed_by_user_id = $2 where id = $1",
+      [id, cliente]
+    );
+
+    const r = await recargar(id, 4000);
+    expect(r.rows[0]!.estado).toBe("active");
+
+    const fila = await leerFresco<{
+      status: string;
+      balance_cents: string;
+      code_hash: string;
+      redeemed_at: string | null;
+      redeemed_by_user_id: string | null;
+    }>(
+      db,
+      `select status, balance_cents, code_hash, redeemed_at, redeemed_by_user_id
+         from public.gift_cards where id = $1`,
+      [id]
+    );
+    expect(fila[0]!.status).toBe("active");
+    expect(Number(fila[0]!.balance_cents)).toBe(4000);
+    // El código no cambia: quien la tenga sigue pudiendo usarla.
+    expect(fila[0]!.code_hash).toBe(HASH_A);
+    // Ya no está agotada, así que el rastro de quién la agotó sale de la fila...
+    expect(fila[0]!.redeemed_at).toBeNull();
+    expect(fila[0]!.redeemed_by_user_id).toBeNull();
+
+    // ...pero no se pierde: queda en el `before_data` de la auditoría.
+    const log = await leerFresco<{ antes: string }>(
+      db,
+      `select before_data::text as antes from public.audit_logs
+        where action = 'gift_card_recargada'`
+    );
+    expect(log[0]!.antes).toContain(cliente);
+  });
+
+  it("no recarga una anulada: primero hay que reactivarla", async () => {
+    const id = await crearTarjeta();
+    await db.query("select * from public.admin_gift_card_anular($1, $2, 'Fraude')", [duena, id]);
+    await expect(recargar(id, 1000)).rejects.toThrow(/tarjeta_anulada/);
+  });
+
+  it("no recarga una caducada", async () => {
+    const id = await crearTarjeta();
+    await db.query("update public.gift_cards set expires_at = now() - interval '1 day' where id = $1", [id]);
+    await expect(recargar(id, 1000)).rejects.toThrow(/tarjeta_caducada/);
+  });
+
+  it("rechaza importes que no son importes", async () => {
+    const id = await crearTarjeta();
+    await expect(recargar(id, 0)).rejects.toThrow(/importe_invalido/);
+    await expect(recargar(id, -500)).rejects.toThrow(/importe_invalido/);
+    // El mismo tope que el ajuste de wallet: $5.000 por operación.
+    await expect(recargar(id, 500_001)).rejects.toThrow(/importe_excesivo/);
+  });
+
+  it("recargar exige motivo y rol de dueña", async () => {
+    const id = await crearTarjeta();
+    await expect(recargar(id, 1000, duena, "   ")).rejects.toThrow(/motivo_obligatorio/);
+    await expect(recargar(id, 1000, empleado)).rejects.toThrow(/no_autorizado/);
   });
 });
 

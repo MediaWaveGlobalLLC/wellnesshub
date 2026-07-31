@@ -91,8 +91,14 @@ export default async function AdminGiftCardsPage({
         </p>
         <p className="mt-2">
           Si alguien perdió su código, <strong>genera uno nuevo</strong>: el anterior deja de
-          funcionar en el momento y el importe es el mismo. El código nuevo aparece{" "}
+          funcionar en el momento y el saldo se conserva íntegro. El código nuevo aparece{" "}
           <strong>una sola vez</strong> en pantalla y hay que copiarlo entonces.
+        </p>
+        <p className="mt-2">
+          Las tarjetas se gastan <strong>por partes</strong>: quien la recibe pasa a su saldo lo que
+          quiera y el resto se queda dentro para otra vez. <strong>Recargar</strong> añade saldo sin
+          ningún cobro detrás —es crédito de la casa, queda auditado— y devuelve a la vida una
+          tarjeta que se quedó a cero.
         </p>
       </Alert>
 

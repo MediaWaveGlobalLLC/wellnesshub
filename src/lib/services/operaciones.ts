@@ -237,7 +237,10 @@ export type TarjetaAdmin = {
   pedidoId: string;
   estadoPedido: string;
   estadoTarjeta: string | null;
+  /** Lo que se emitió y se cobró. No cambia nunca. */
   centavos: number;
+  /** Lo que queda por gastar. `null` si no hay tarjeta emitida. */
+  saldoCents: number | null;
   formato: string;
   destinatario: string;
   correoDestinatario: string | null;
@@ -268,7 +271,7 @@ export async function listarPedidosGiftCard(
     .from("gift_card_orders")
     .select(
       "id, status, amount_cents, format, recipient_name, recipient_email, created_at, paid_at, " +
-        "purchaser_user_id, gift_cards(id, code_last4, status, redeemed_at)",
+        "purchaser_user_id, gift_cards(id, code_last4, status, redeemed_at, balance_cents)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -298,10 +301,15 @@ export async function listarPedidosGiftCard(
     created_at: string;
     paid_at: string | null;
     purchaser_user_id: string;
-    gift_cards:
-      | { id: string; code_last4: string; status: string; redeemed_at: string | null }[]
-      | { id: string; code_last4: string; status: string; redeemed_at: string | null }
-      | null;
+    gift_cards: FilaTarjeta[] | FilaTarjeta | null;
+  };
+
+  type FilaTarjeta = {
+    id: string;
+    code_last4: string;
+    status: string;
+    redeemed_at: string | null;
+    balance_cents: number | string;
   };
 
   const filas = (data ?? []) as unknown as FilaPedido[];
@@ -329,6 +337,7 @@ export async function listarPedidosGiftCard(
         estadoPedido: o.status,
         estadoTarjeta: t?.status ?? null,
         centavos: Number(o.amount_cents),
+        saldoCents: t ? Number(t.balance_cents) : null,
         formato: o.format,
         destinatario: o.recipient_name,
         correoDestinatario: o.recipient_email,
