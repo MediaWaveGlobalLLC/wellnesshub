@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -210,10 +211,25 @@ export function Carrito({
               <ul className="mt-4 divide-y divide-border border-y border-border">
                 {pedibles.map((p) => (
                   <li key={p.id} className="py-4">
-                    <div className="flex flex-wrap items-baseline justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-display text-lg text-espresso">{p.nombre}</p>
-                        {p.nota && <p className="text-sm text-text-muted">{p.nota}</p>}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        {/* Igual que en la carta: sin foto, la fila queda como
+                            estaba. Es el caso normal, no la excepción. */}
+                        {p.imagen && (
+                          <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border">
+                            <Image
+                              src={p.imagen.src}
+                              alt=""
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                            />
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-display text-lg text-espresso">{p.nombre}</p>
+                          {p.nota && <p className="text-sm text-text-muted">{p.nota}</p>}
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2">

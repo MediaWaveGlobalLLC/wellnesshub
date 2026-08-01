@@ -6,6 +6,8 @@
  * hay ninguna consulta ni ningún secreto, solo formas y aritmética.
  */
 
+import type { BrandAsset } from "@/lib/brand-assets.generated";
+
 export type Mundo = "cafe" | "matcha" | "piel" | "comida";
 export type EstadoCategoria = "hoy" | "pronto";
 
@@ -33,6 +35,16 @@ export type ProductoCatalogo = {
    * borrarlo dejaría huérfano el favorito de quien lo hubiera guardado.
    */
   archivado: boolean;
+  /**
+   * Clave del manifiesto de marca. La necesita el panel para preseleccionar el
+   * selector de foto; las pantallas públicas usan `imagen`, ya resuelta.
+   */
+  imagenClave: string | null;
+  /**
+   * El asset ya resuelto, o `null` si no tiene foto o si la clave dejó de
+   * existir al regenerar el manifiesto. Nunca una imagen rota.
+   */
+  imagen: BrandAsset | null;
   variantes: VarianteCatalogo[];
 };
 

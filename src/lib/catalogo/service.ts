@@ -5,6 +5,7 @@ import { supabaseConfigurado } from "@/lib/supabase/env";
 import { MENU } from "@/lib/site";
 import { slugDeItem } from "@/lib/menu";
 import type { CategoriaCatalogo, EstadoCategoria, Mundo, ProductoCatalogo } from "./tipos";
+import { BRAND_ASSETS, type BrandAsset } from "@/lib/brand-assets.generated";
 
 /**
  * Lectura del catálogo — `0011_catalogo.sql`.
@@ -40,6 +41,7 @@ type FilaCategoria = {
     es_modificador: boolean;
     orden: number;
     archivado_at: string | null;
+    imagen_clave: string | null;
     menu_variantes: {
       id: string;
       etiqueta: string | null;
@@ -52,10 +54,23 @@ type FilaCategoria = {
 const SELECT = `
   id, slug, nombre_es, mundo, estado, etiqueta_tamanos, orden,
   menu_productos (
-    id, slug, nombre, nota_es, destacado, disponible, es_modificador, orden, archivado_at,
+    id, slug, nombre, nota_es, destacado, disponible, es_modificador, orden, archivado_at, imagen_clave,
     menu_variantes ( id, etiqueta, precio_cents, orden )
   )
 `;
+
+/**
+ * Resuelve la clave guardada contra el manifiesto de marca.
+ *
+ * Si alguien renombra un asset y el manifiesto se regenera, la clave vieja deja
+ * de existir: entonces se pinta la fila sin foto en vez de romper la carta con
+ * una imagen rota. Mismo criterio que `src/lib/services/recompensas.ts`.
+ */
+function resolverImagen(clave: string | null | undefined): BrandAsset | null {
+  if (!clave) return null;
+  const assets = BRAND_ASSETS as Record<string, BrandAsset>;
+  return assets[clave] ?? null;
+}
 
 function porOrden<T extends { orden: number }>(filas: T[]): T[] {
   // Se ordena aquí y no en la consulta: PostgREST ordena las relaciones
@@ -89,6 +104,8 @@ function mapear(filas: FilaCategoria[], incluirArchivados = false): CategoriaCat
       disponible: p.disponible,
       esModificador: p.es_modificador,
       archivado: p.archivado_at !== null,
+      imagenClave: p.imagen_clave,
+      imagen: resolverImagen(p.imagen_clave),
       variantes: porOrden(p.menu_variantes ?? []).map((v) => ({
         id: v.id,
         etiqueta: v.etiqueta,
@@ -146,6 +163,9 @@ function catalogoDeRespaldo(): CategoriaCatalogo[] {
       esModificador: false,
       // El respaldo es la carta transcrita del PDF: ahí no hay nada archivado.
       archivado: false,
+      // El respaldo sale de site.ts, que no tiene fotos por producto.
+      imagenClave: null,
+      imagen: null,
       variantes: item.precio.split("/").map((p, k, todos) => ({
         id: `respaldo-${seccion.id}-${j}-${k}`,
         etiqueta: todos.length > 1 ? (k === 0 ? "12 oz" : "16 oz") : null,

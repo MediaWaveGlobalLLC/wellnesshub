@@ -24,7 +24,7 @@ import { cn } from "@/lib/cn";
 const ICONO: Record<string, ReactNode> = {
   "/": <CupIcon size={20} />,
   "/puntos": <LeafIcon size={20} />,
-  "/tienda": <BagIcon size={20} />,
+  "/pedir": <BagIcon size={20} />,
   "/wallet": <WalletIcon size={20} />,
   "/perfil": <UserIcon size={20} />,
 };

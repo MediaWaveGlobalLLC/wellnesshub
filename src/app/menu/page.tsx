@@ -80,7 +80,26 @@ function Seccion({ seccion, indice }: { seccion: CategoriaCatalogo; indice: numb
 
         <ul className="space-y-3.5">
           {seccion.productos.map((producto) => (
-            <li key={producto.slug} className="flex items-baseline gap-2">
+            <li key={producto.slug} className="flex items-center gap-2">
+              {/*
+                Miniatura solo si el producto tiene foto de marca asignada.
+
+                Sin foto la fila queda EXACTAMENTE como estaba —nombre, guía de
+                puntos y precio—, que es el caso normal: hay 24 imágenes
+                elegibles para 30 productos. `docs/11` es explícito: el asset
+                que falta se lista, no se sustituye por un relleno.
+              */}
+              {producto.imagen && (
+                <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-border">
+                  <Image
+                    src={producto.imagen.src}
+                    alt=""
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                  />
+                </span>
+              )}
               <span className="flex items-center gap-1.5 font-medium text-espresso">
                 {producto.destacado && (
                   <LeafIcon size={14} className="text-mustard" aria-label="Destacado" />

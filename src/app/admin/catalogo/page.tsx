@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/states";
 import { FilaProducto } from "@/components/admin/catalogo/FilaProducto";
 import { actorPuede, exigirAdmin } from "@/lib/services/admin-service";
 import { obtenerCatalogoAdmin } from "@/lib/catalogo/service";
+import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 
 export const metadata: Metadata = {
   title: "Catálogo · Administración",
@@ -29,6 +30,15 @@ export default async function CatalogoPage() {
   if (!actor) redirect("/");
 
   const puedeEditar = actorPuede(actor, "editar_catalogo");
+
+  /*
+    Fotos elegibles: solo del manifiesto, y solo producto o fotografía —un logo
+    no ilustra una bebida—. Es la única forma de asignar imagen, así que no hay
+    manera de meter una URL suelta en la carta.
+  */
+  const fotos = Object.entries(BRAND_ASSETS)
+    .filter(([, a]) => a.group === "producto" || a.group === "fotografia")
+    .map(([clave, a]) => ({ clave, src: a.src }));
   const categorias = await obtenerCatalogoAdmin();
 
   const activos = categorias.filter((c) => c.productos.some((p) => !p.archivado));
@@ -77,7 +87,8 @@ export default async function CatalogoPage() {
               {c.productos
                 .filter((p) => !p.archivado)
                 .map((p) => (
-                  <FilaProducto key={p.id} producto={p} puedeEditar={puedeEditar} />
+                  <FilaProducto key={p.id} producto={p} puedeEditar={puedeEditar}
+                fotos={fotos} />
                 ))}
             </ul>
           </Card>
@@ -92,7 +103,8 @@ export default async function CatalogoPage() {
           </p>
           <ul className="mt-3">
             {archivados.map((p) => (
-              <FilaProducto key={p.id} producto={p} puedeEditar={puedeEditar} />
+              <FilaProducto key={p.id} producto={p} puedeEditar={puedeEditar}
+                fotos={fotos} />
             ))}
           </ul>
         </Card>
