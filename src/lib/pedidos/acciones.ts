@@ -8,6 +8,7 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { crearClienteServicio, servicioDisponible } from "@/lib/supabase/admin";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { enMinutos, limitar } from "@/lib/seguridad/rate-limit";
+import { urlBaseDelSitio } from "@/lib/url-base";
 import { crearCheckoutPedido } from "./service";
 
 /**
@@ -147,12 +148,12 @@ export async function pagarConTarjeta(datos: unknown): Promise<ResultadoPago> {
   const user = await sesion();
   if (!user) return { ok: false, error: "Inicia sesión para pagar." };
 
-  // La URL base sale de la petición, no de una constante: así el checkout
-  // vuelve al mismo dominio desde el que se pidió.
+  // De la petición si no hay variable, y normalizada si la hay: un
+  // `NEXT_PUBLIC_APP_URL` sin esquema hace que Stripe rechace la sesión.
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "https";
-  const urlBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? `${proto}://${host}`;
+  const urlBase = urlBaseDelSitio(`${proto}://${host}`);
 
   const r = await crearCheckoutPedido(user.id, parsed.data.orderId, urlBase);
   if (!r.ok) return { ok: false, error: r.mensaje };
