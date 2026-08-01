@@ -11,7 +11,7 @@
  *     no deje favoritos huérfanos.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { crearBase, crearUsuario, type Db } from "./supabase-harness";
+import { crearBase, crearUsuario, leerFresco, type Db } from "./supabase-harness";
 
 let db: Db;
 let duena: string;
@@ -453,5 +453,90 @@ describe("permisos de las funciones", () => {
     }
     // Lo que importa es que no cambió nada.
     expect((await variantesDe("matcha-clasico"))[0]!.precio_cents).toBe(875);
+  });
+});
+
+describe("foto del producto", () => {
+  const asignar = (
+    productoId: string,
+    clave: string | null,
+    actor: string,
+    motivo = "Ya tenemos foto de esta bebida"
+  ) =>
+    db.query<{ producto_id: string }>(
+      "select * from public.admin_catalogo_producto_foto($1,$2,$3,$4)",
+      [actor, productoId, clave, motivo]
+    );
+
+  const claveDe = async (slug: string) => {
+    const r = await leerFresco<{ imagen_clave: string | null }>(
+      db,
+      "select imagen_clave from public.menu_productos where slug = $1",
+      [slug]
+    );
+    return r[0]!.imagen_clave;
+  };
+
+  it("la dueña asigna una foto y queda auditado", async () => {
+    const p = await productoPorSlug("matcha-clasico");
+    await asignar(p.id, "siembraMatchaLattePromo", duena);
+
+    expect(await claveDe("matcha-clasico")).toBe("siembraMatchaLattePromo");
+
+    const log = await leerFresco<{ action: string; despues: string }>(
+      db,
+      `select action, after_data::text as despues from public.audit_logs
+        where entity_type = 'menu_producto'`
+    );
+    expect(log[0]!.action).toBe("menu_producto_foto");
+    expect(log[0]!.despues).toContain("siembraMatchaLattePromo");
+  });
+
+  it("cadena vacía quita la foto, no guarda una clave vacía", async () => {
+    const p = await productoPorSlug("matcha-clasico");
+    await asignar(p.id, "siembraMatchaLattePromo", duena);
+    await asignar(p.id, "   ", duena, "Se retira la foto");
+
+    expect(await claveDe("matcha-clasico")).toBeNull();
+  });
+
+  it("el mostrador no toca las fotos", async () => {
+    const p = await productoPorSlug("matcha-clasico");
+    await expect(asignar(p.id, "siembraMatchaLattePromo", empleado)).rejects.toThrow(
+      /no_autorizado/
+    );
+  });
+
+  it("exige motivo", async () => {
+    const p = await productoPorSlug("matcha-clasico");
+    await expect(asignar(p.id, "siembraMatchaLattePromo", duena, "   ")).rejects.toThrow(
+      /motivo_obligatorio/
+    );
+  });
+
+  it("un producto que no existe no se inventa", async () => {
+    await expect(
+      asignar("00000000-0000-0000-0000-000000000000", "x", duena)
+    ).rejects.toThrow(/producto_no_encontrado/);
+  });
+
+  /*
+    La prueba que no existía en ningún sitio del repo.
+
+    Postgres concede EXECUTE a PUBLIC por defecto. Una función `security definer`
+    que escriba en el catálogo y se olvide del bloque de revoke queda ejecutable
+    por `anon`, y el fallo es silencioso: nada más lo detectaría.
+  */
+  it("anon y authenticated NO tienen privilegio de ejecución", async () => {
+    const r = await leerFresco<{ de_anon: boolean; de_auth: boolean }>(
+      db,
+      `select
+         has_function_privilege('anon',
+           'public.admin_catalogo_producto_foto(uuid,uuid,text,text,text)', 'EXECUTE') as de_anon,
+         has_function_privilege('authenticated',
+           'public.admin_catalogo_producto_foto(uuid,uuid,text,text,text)', 'EXECUTE') as de_auth`
+    );
+    expect(r[0]!.de_anon).toBe(false);
+    expect(r[0]!.de_auth).toBe(false);
   });
 });

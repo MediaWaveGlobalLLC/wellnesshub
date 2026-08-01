@@ -39,9 +39,14 @@ export const NAV_PRINCIPAL: NavItem[] = [
  * al login y la barra sería una trampa.
  *
  * Los destinos salen de `05-cuenta-movil-reference.png` —Inicio, Puntos, Tienda
- * y Perfil— más Wallet, que la referencia no lleva. Se añade a propósito: ahí
- * viven el crédito y las gift cards, y dejarlos a dos toques de distancia
- * escondería lo único de la cuenta que mueve dinero.
+ * y Perfil— con dos desvíos deliberados:
+ *
+ *  · se añade Wallet, que la referencia no lleva: ahí viven el crédito y las
+ *    gift cards, y dejarlos a dos toques escondería lo único de la cuenta que
+ *    mueve dinero;
+ *  · «Tienda» pasa a ser «Pedir». /tienda es un escaparate de merch del que no
+ *    se puede comprar nada; /pedir es donde se pide de verdad. Gastar uno de
+ *    los cinco huecos del pulgar en un callejón sin salida no se sostiene.
  *
  * Sustituye a la barra del mockup 02 (Inicio · Menú · Wallet · Comunidad ·
  * Perfil), que estuvo declarada aquí desde la Fase 5 sin que la pintara nadie.
@@ -49,7 +54,7 @@ export const NAV_PRINCIPAL: NavItem[] = [
 export const NAV_MOVIL: NavItem[] = [
   { href: "/", es: "Inicio", en: "Home" },
   { href: "/puntos", es: "Puntos", en: "Points" },
-  { href: "/tienda", es: "Tienda", en: "Shop" },
+  { href: "/pedir", es: "Pedir", en: "Order" },
   { href: "/wallet", es: "Wallet", en: "Wallet" },
   { href: "/perfil", es: "Perfil", en: "Profile" },
 ];

@@ -8,9 +8,12 @@ import { enMinutos, limitar } from "@/lib/seguridad/rate-limit";
 import { nuevoRequestId } from "@/lib/api/respuesta";
 import {
   archivarSchema,
+  borrarVarianteSchema,
+  crearVarianteSchema,
   crearProductoSchema,
   disponibilidadSchema,
   editarProductoSchema,
+  fotoProductoSchema,
   precioSchema,
   reordenarSchema,
 } from "@/lib/validation/catalogo";
@@ -263,4 +266,84 @@ export async function reordenar(datos: unknown): Promise<Resultado> {
 
   revalidar();
   return { ok: true, mensaje: "Orden actualizado." };
+}
+
+/**
+ * Asigna o quita la foto de un producto.
+ *
+ * Guarda una clave del manifiesto de marca, nunca una URL: el validador de
+ * diseño no mira la base de datos, así que la barrera vive en el modelo de
+ * datos (`0022`). Cadena vacía quita la foto.
+ */
+export async function cambiarFoto(datos: unknown): Promise<Resultado> {
+  const parsed = fotoProductoSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_catalogo_producto_foto", {
+    p_actor_id: ctx.actor.id,
+    p_producto_id: parsed.data.productoId,
+    p_imagen_clave: parsed.data.imagenClave,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidar();
+  return {
+    ok: true,
+    mensaje: parsed.data.imagenClave ? "Foto asignada." : "Foto quitada.",
+  };
+}
+
+/**
+ * Añade un tamaño a un producto que ya existe.
+ *
+ * La RPC de `0015` ya estaba; lo que faltaba era esto y un botón. Un producto
+ * sin ningún tamaño no tiene precio, así que la de borrar se niega a dejarlo
+ * vacío — esa comprobación vive en SQL.
+ */
+export async function crearVariante(datos: unknown): Promise<Resultado> {
+  const parsed = crearVarianteSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_catalogo_variante_crear", {
+    p_actor_id: ctx.actor.id,
+    p_producto_id: parsed.data.productoId,
+    p_etiqueta: parsed.data.etiqueta ?? null,
+    p_precio_cents: parsed.data.precioCents,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidar();
+  return { ok: true, mensaje: "Tamaño añadido." };
+}
+
+export async function borrarVariante(datos: unknown): Promise<Resultado> {
+  const parsed = borrarVarianteSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_catalogo_variante_borrar", {
+    p_actor_id: ctx.actor.id,
+    p_variante_id: parsed.data.varianteId,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidar();
+  return { ok: true, mensaje: "Tamaño borrado." };
 }

@@ -98,3 +98,42 @@ export const reordenarSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
   reason: motivo,
 });
+
+/**
+ * Foto de un producto — `0022_catalogo_foto.sql`.
+ *
+ * Es una CLAVE del manifiesto de marca, nunca una URL. Vacío significa quitar
+ * la foto. La comprobación de que la clave existe de verdad la hace la pantalla
+ * al ofrecer solo claves del manifiesto en el selector; aquí solo se acota la
+ * forma, igual que en el resto de campos de texto.
+ */
+export const fotoProductoSchema = z.object({
+  productoId: z.string().uuid(),
+  imagenClave: z
+    .string()
+    .trim()
+    .max(80, "Máximo 80 caracteres.")
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+  reason: motivo,
+});
+
+/* ── Tamaños sueltos ─────────────────────────────────────────────────────── */
+
+/**
+ * Añadir un tamaño a un producto que ya existe.
+ *
+ * `crearProductoSchema` ya permite hasta cuatro de golpe al dar de alta; esto
+ * es para el después, cuando aparece el «16 oz» de algo que solo tenía uno.
+ */
+export const crearVarianteSchema = z.object({
+  productoId: z.string().uuid(),
+  etiqueta: z.string().trim().max(20, "Demasiado larga.").optional(),
+  precioCents: precioDolares,
+  reason: motivo,
+});
+
+export const borrarVarianteSchema = z.object({
+  varianteId: z.string().uuid(),
+  reason: motivo,
+});

@@ -123,6 +123,25 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 - **Consecuencias:** el webhook de Stripe pasa a atender dos cosas y las distingue por `metadata.tipo`. Sin marca se asume gift card, que es lo único que existía antes, para que las sesiones abiertas antes del cambio sigan emitiendo su tarjeta. El CTA «Ordena online» del header deja de apuntar a `/menu`: la URL de pedidos real que D7 daba por pendiente ya existe.
 - **Pendiente:** merch de `/tienda` (no tiene catálogo con precios), hora de recogida y aviso al cliente cuando el pedido esté listo.
 
+### DEC-009 — Foto por producto en el menú, y el catálogo editable de verdad
+
+- **Estado:** aprobada (aprobación escrita del dueño, 2026-08-01: «sí ponla en el menú también y asignar fotos está bien»)
+- **Contexto:** `menu_productos` no tenía columna de imagen, así que la carta enseñaba fotos genéricas por sección y ninguna por producto. Y el panel de catálogo solo exponía precio, agotado y archivar: crear producto, editar nombre/nota/destacado, reordenar y gestionar tamaños existían como RPC desde `0015` **sin ningún botón que las llamara**.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Cómo se guarda la foto | Clave del manifiesto de marca en `imagen_clave` | Extiende la regla de DEC-007. El validador de diseño **no lee `.sql` ni la base**, así que una URL guardada en Postgres pasaría en verde violando `docs/01`: la barrera tiene que estar en el modelo de datos |
+  | Subir vs asignar | Asignar, no subir | Una migración que toque `storage.*` rompe las 17 suites de integración (verificado). Esquivarlo dejaría el RLS del bucket sin ningún test |
+  | Foto en `/menu` | Sí, miniatura de 44px dentro de la fila existente | Aprobación escrita, según exige `CLAUDE.md` §2. No se convierte la lista en cuadrícula ni se rompe la guía de puntos |
+  | Sin foto | Caso **normal**, no excepción | 24 imágenes elegibles para 30 productos, y varias son totes y servilletas. `docs/11`: el asset que falta se lista, no se sustituye |
+  | Texto alternativo | `alt=""` | La miniatura acompaña al nombre en la misma fila: es decorativa, y repetirlo haría que el lector de pantalla lo dijera dos veces |
+  | RPC de la foto | Función nueva, no ampliar la de editar | `create or replace` con otra lista de argumentos crea una **sobrecarga**: la firma vieja sobrevive sin revocar y las llamadas posicionales de los tests se rompen |
+  | Barra inferior | «Tienda» pasa a ser «Pedir» | `/tienda` es un escaparate del que no se puede comprar. Gastar uno de los cinco huecos del pulgar en un callejón sin salida no se sostiene |
+
+- **Consecuencias:** se descubrió que `public/brand/optimized/` **no existía en disco**, está en `.gitignore` y ningún script del build lo generaba, mientras el manifiesto ya apuntaba ahí — toda imagen optimizada era un 404, incluido el hero de la portada. Se arregla con un `prebuild` que ejecuta `build-asset-manifest`.
+- **Nota de seguridad:** la CSP (`img-src 'self' data: blob:`) **no** es la salvaguarda que parece frente a imágenes remotas: `next/image` con `remotePatterns` las sirve desde el propio origen. La decisión se apoya en el modelo de datos, no en la CSP.
+
 ## Plantilla
 
 ```md

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -7,8 +8,16 @@ import { Badge } from "@/components/ui/Surface";
 import { Button } from "@/components/ui/Button";
 import { Select, CampoDinero } from "@/components/admin/ui/Campos";
 import { Field } from "@/components/ui/Field";
-import { CheckIcon, LapizIcon, PapeleraIcon } from "@/components/icons";
-import { cambiarDisponibilidad, cambiarPrecio, archivarProducto } from "@/lib/catalogo/acciones";
+import { CheckIcon, LapizIcon, MasIcon, PapeleraIcon } from "@/components/icons";
+import {
+  archivarProducto,
+  borrarVariante,
+  cambiarDisponibilidad,
+  cambiarFoto,
+  cambiarPrecio,
+  crearVariante,
+  editarProducto,
+} from "@/lib/catalogo/acciones";
 import { MOTIVOS_DISPONIBILIDAD } from "@/lib/validation/catalogo";
 import { precioLegible, type ProductoCatalogo } from "@/lib/catalogo/tipos";
 
@@ -27,14 +36,22 @@ import { precioLegible, type ProductoCatalogo } from "@/lib/catalogo/tipos";
 export function FilaProducto({
   producto,
   puedeEditar,
+  fotos,
 }: {
   producto: ProductoCatalogo;
   /** Falso para un empleado: solo verá el botón de agotado. */
   puedeEditar: boolean;
+  /** Claves elegibles del manifiesto de marca. Nunca URLs libres. */
+  fotos: { clave: string; src: string }[];
 }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
+  /*
+    Qué formulario está abierto bajo la fila. El precio va aparte porque su
+    estado guarda QUÉ tamaño se edita; los demás son uno solo por fila.
+  */
+  const [panel, setPanel] = useState<"datos" | "foto" | "tamano" | null>(null);
   const [aviso, setAviso] = useState<{ tono: "ok" | "error"; texto: string } | null>(null);
 
   function ejecutar(fn: () => Promise<{ ok: boolean; error?: string; mensaje?: string }>) {
@@ -48,6 +65,7 @@ export function FilaProducto({
       );
       if (r.ok) {
         setEditando(null);
+        setPanel(null);
         router.refresh();
       }
     });
@@ -56,6 +74,21 @@ export function FilaProducto({
   return (
     <li className="border-b border-border py-3.5 last:border-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
+        {/*
+          Miniatura. Con foto se ve; sin foto, un hueco punteado que dice qué
+          falta. Es el mismo tratamiento del panel de recompensas, y el estado
+          «sin foto» es el normal: hay más productos que fotos aprobadas.
+        */}
+        {producto.imagen ? (
+          <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border">
+            <Image src={producto.imagen.src} alt="" fill sizes="48px" className="object-cover" />
+          </span>
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-[0.55rem] uppercase tracking-[0.08em] text-text-muted">
+            Sin foto
+          </span>
+        )}
+
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-2 font-medium text-espresso">
             {producto.nombre}
@@ -99,6 +132,39 @@ export function FilaProducto({
           {/* Agotado: un clic, con motivo de lista. Lo puede hacer el mostrador. */}
           <AccionAgotado producto={producto} onEjecutar={ejecutar} pendiente={pendiente} />
 
+          {puedeEditar && (
+            <>
+              <Button
+                type="button"
+                size="md"
+                variant="terciario"
+                onClick={() => setPanel(panel === "datos" ? null : "datos")}
+                aria-expanded={panel === "datos"}
+              >
+                Datos
+              </Button>
+              <Button
+                type="button"
+                size="md"
+                variant="terciario"
+                onClick={() => setPanel(panel === "foto" ? null : "foto")}
+                aria-expanded={panel === "foto"}
+              >
+                Foto
+              </Button>
+              <Button
+                type="button"
+                size="md"
+                variant="terciario"
+                onClick={() => setPanel(panel === "tamano" ? null : "tamano")}
+                aria-expanded={panel === "tamano"}
+              >
+                <MasIcon size={13} />
+                Tamaño
+              </Button>
+            </>
+          )}
+
           {puedeEditar && !producto.archivado && (
             <AccionArchivar producto={producto} onEjecutar={ejecutar} pendiente={pendiente} />
           )}
@@ -137,6 +203,160 @@ export function FilaProducto({
             Cancelar
           </Button>
         </form>
+      )}
+
+      {/* Datos del producto: nombre, nota y si va destacado. */}
+      {panel === "datos" && (
+        <form
+          className="mt-3 grid gap-3 rounded-lg bg-surface-muted p-3 sm:grid-cols-2"
+          action={(fd) =>
+            ejecutar(() =>
+              editarProducto({
+                productoId: producto.id,
+                nombre: String(fd.get("nombre") ?? ""),
+                nota: String(fd.get("nota") ?? ""),
+                destacado: fd.get("destacado") === "on",
+                reason: String(fd.get("motivo") ?? ""),
+              })
+            )
+          }
+        >
+          <Field label="Nombre" name="nombre" defaultValue={producto.nombre} required minLength={2} />
+          <Field
+            label="Nota (opcional)"
+            name="nota"
+            defaultValue={producto.nota ?? ""}
+            placeholder="Suave, cremoso y energizante"
+          />
+          <label className="flex items-center gap-2.5 self-end pb-3 text-sm text-espresso">
+            <input
+              type="checkbox"
+              name="destacado"
+              defaultChecked={producto.destacado}
+              className="h-4 w-4 accent-[var(--color-terracota)]"
+            />
+            Destacado en la carta
+          </label>
+          <Field label="Motivo" name="motivo" required minLength={6} placeholder="Por qué cambia" />
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
+            <Button type="submit" size="md" cargando={pendiente}>
+              Guardar
+            </Button>
+            <Button type="button" size="md" variant="terciario" onClick={() => setPanel(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {/* Foto: solo claves del manifiesto de marca, nunca una URL. */}
+      {panel === "foto" && (
+        <form
+          className="mt-3 flex flex-wrap items-end gap-3 rounded-lg bg-surface-muted p-3"
+          action={(fd) =>
+            ejecutar(() =>
+              cambiarFoto({
+                productoId: producto.id,
+                imagenClave: String(fd.get("imagen") ?? ""),
+                reason: String(fd.get("motivo") ?? ""),
+              })
+            )
+          }
+        >
+          <div className="min-w-[14rem]">
+            <label
+              htmlFor={`foto-${producto.id}`}
+              className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-text-muted"
+            >
+              Foto de marca
+            </label>
+            <select
+              id={`foto-${producto.id}`}
+              name="imagen"
+              defaultValue={producto.imagenClave ?? ""}
+              className="min-h-[var(--control-height)] w-full rounded-lg border border-border bg-surface px-4 text-espresso focus:border-terracota focus:outline-none"
+            >
+              <option value="">Sin foto</option>
+              {fotos.map((f) => (
+                <option key={f.clave} value={f.clave}>
+                  {f.clave}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[14rem] flex-1">
+            <Field label="Motivo" name="motivo" required minLength={6} placeholder="Por qué cambia" />
+          </div>
+          <Button type="submit" size="md" cargando={pendiente}>
+            Guardar
+          </Button>
+          <Button type="button" size="md" variant="terciario" onClick={() => setPanel(null)}>
+            Cancelar
+          </Button>
+        </form>
+      )}
+
+      {/* Tamaños: añadir uno nuevo, o borrar los que sobren. */}
+      {panel === "tamano" && (
+        <div className="mt-3 rounded-lg bg-surface-muted p-3">
+          <form
+            className="flex flex-wrap items-end gap-3"
+            action={(fd) =>
+              ejecutar(() =>
+                crearVariante({
+                  productoId: producto.id,
+                  etiqueta: String(fd.get("etiqueta") ?? ""),
+                  precioCents: String(fd.get("precio") ?? ""),
+                  reason: String(fd.get("motivo") ?? ""),
+                })
+              )
+            }
+          >
+            <div className="w-32">
+              <Field label="Etiqueta" name="etiqueta" placeholder="16 oz" />
+            </div>
+            <div className="w-32">
+              <CampoDinero label="Precio" name="precio" required />
+            </div>
+            <div className="min-w-[12rem] flex-1">
+              <Field label="Motivo" name="motivo" required minLength={6} placeholder="Por qué se añade" />
+            </div>
+            <Button type="submit" size="md" cargando={pendiente}>
+              Añadir
+            </Button>
+            <Button type="button" size="md" variant="terciario" onClick={() => setPanel(null)}>
+              Cerrar
+            </Button>
+          </form>
+
+          {/* Borrar solo tiene sentido con más de uno: sin ningún tamaño el
+              producto se queda sin precio, y SQL lo rechaza igualmente. */}
+          {producto.variantes.length > 1 && (
+            <ul className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+              {producto.variantes.map((v) => (
+                <li key={v.id}>
+                  <Button
+                    type="button"
+                    size="md"
+                    variant="terciario"
+                    cargando={pendiente}
+                    onClick={() =>
+                      ejecutar(() =>
+                        borrarVariante({
+                          varianteId: v.id,
+                          reason: `Se retira el tamaño ${v.etiqueta ?? "único"} de ${producto.nombre}`,
+                        })
+                      )
+                    }
+                  >
+                    <PapeleraIcon size={13} />
+                    {v.etiqueta ?? "único"} · ${precioLegible(v.precioCents)}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {aviso && (
