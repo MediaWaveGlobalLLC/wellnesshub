@@ -148,3 +148,87 @@ export async function webhooksRecientes(limite = 20): Promise<Webhook[]> {
     error: w.error,
   }));
 }
+
+/* ── Recompensas — `0020_recompensas.sql` ────────────────────────────────── */
+
+export type RecompensaAdmin = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  costoPuntos: number;
+  imagenClave: string | null;
+  /** `null` = sin límite. */
+  existencias: number | null;
+  orden: number;
+  activa: boolean;
+  vecesCanjeada: number;
+  pendientes: number;
+};
+
+export type CanjePendiente = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  costoPuntos: number;
+  creado: string;
+  persona: string | null;
+  email: string | null;
+};
+
+export async function listarRecompensasAdmin(): Promise<RecompensaAdmin[]> {
+  const { data, error } = await servicio().rpc("admin_recompensas_listar");
+  if (error) throw new Error(`No se pudieron leer las recompensas: ${error.message}`);
+
+  type Fila = {
+    id: string;
+    nombre: string;
+    descripcion: string | null;
+    costo_puntos: string;
+    imagen_clave: string | null;
+    existencias: number | null;
+    orden: number;
+    activa: boolean;
+    veces_canjeada: string;
+    pendientes: string;
+  };
+
+  return ((data ?? []) as Fila[]).map((r) => ({
+    id: r.id,
+    nombre: r.nombre,
+    descripcion: r.descripcion,
+    costoPuntos: Number(r.costo_puntos),
+    imagenClave: r.imagen_clave,
+    existencias: r.existencias === null ? null : Number(r.existencias),
+    orden: Number(r.orden),
+    activa: r.activa,
+    vecesCanjeada: Number(r.veces_canjeada),
+    pendientes: Number(r.pendientes),
+  }));
+}
+
+/** La cola del mostrador: lo canjeado y aún sin recoger, lo más viejo primero. */
+export async function listarCanjesPendientes(): Promise<CanjePendiente[]> {
+  const { data, error } = await servicio().rpc("admin_canjes_pendientes");
+  if (error) throw new Error(`No se pudieron leer los canjes: ${error.message}`);
+
+  type Fila = {
+    id: string;
+    codigo: string;
+    nombre: string;
+    costo_puntos: string;
+    creado: string;
+    persona: string | null;
+    email: string | null;
+  };
+
+  return ((data ?? []) as Fila[]).map((r) => ({
+    id: r.id,
+    codigo: r.codigo,
+    nombre: r.nombre,
+    costoPuntos: Number(r.costo_puntos),
+    creado: r.creado,
+    // El RPC devuelve cadena vacía si el perfil no tiene nombre todavía.
+    persona: r.persona && r.persona.length > 0 ? r.persona : null,
+    email: r.email,
+  }));
+}

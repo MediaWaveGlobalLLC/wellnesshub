@@ -223,3 +223,51 @@ export const aplicarReglaSchema = z.object({
   userId: z.string().uuid(),
   clave: z.string().trim().regex(/^[a-z_]{3,40}$/, "Regla no válida."),
 });
+
+/* ── Recompensas — `0020_recompensas.sql` ────────────────────────────────── */
+
+/** El mismo tope que un ajuste de puntos. La función SQL lo repite. */
+export const TOPE_COSTO_PUNTOS = 100_000;
+
+export const recompensaSchema = z.object({
+  /** Ausente = alta. Presente = edición. */
+  rewardId: z.string().uuid().optional(),
+  nombre: z.string().trim().min(2, "Escribe el nombre de la recompensa.").max(80, "Máximo 80 caracteres."),
+  descripcion: z
+    .string()
+    .trim()
+    .max(160, "Máximo 160 caracteres.")
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+  costoPuntos: z
+    .number({ message: "Escribe cuántos puntos cuesta." })
+    .int("Los puntos son enteros.")
+    .positive("El coste tiene que ser mayor que cero.")
+    .max(TOPE_COSTO_PUNTOS, `Una recompensa no puede costar más de ${TOPE_COSTO_PUNTOS} puntos.`),
+  /**
+   * Clave del manifiesto de marca, nunca una URL: `docs/01` prohíbe imágenes
+   * remotas o inventadas, y guardar la clave hace que solo se pueda apuntar a un
+   * asset ya aprobado y versionado.
+   */
+  imagenClave: z
+    .string()
+    .trim()
+    .max(80)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+  /** `null` = sin límite, que es lo normal en un café. */
+  existencias: z
+    .number()
+    .int("Las existencias son enteras.")
+    .min(0, "No pueden ser negativas.")
+    .nullable()
+    .optional()
+    .transform((v) => (v === undefined ? null : v)),
+  orden: z.number().int().min(0).optional().transform((v) => v ?? 0),
+  activa: z.boolean().optional().transform((v) => v ?? true),
+  reason: motivo,
+});
+
+export const entregarCanjeSchema = z.object({
+  redemptionId: z.string().uuid(),
+});

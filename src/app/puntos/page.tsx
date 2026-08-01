@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/Surface";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { obtenerDashboard } from "@/lib/services/profile-service";
+import { canjesPendientes, listarRecompensas } from "@/lib/services/recompensas";
+import { CanjesPendientes, Recompensas } from "@/components/puntos/Recompensas";
 import { formatearPuntos } from "@/lib/loyalty";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 
@@ -16,10 +18,9 @@ import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
  * puntos tienes, cuánto falta para el siguiente escalón y de qué formas se
  * ganan.
  *
- * Lo que la referencia enseña y aquí todavía NO está es «Canjea tus puntos».
- * No hay catálogo de recompensas: ni tabla, ni panel donde crearlas. Poner una
- * cuadrícula vacía prometería una función que no existe, así que la sección
- * llega con las recompensas, no antes.
+ * «Canjea tus puntos» sale del catálogo que la dueña gestiona en el panel
+ * (`0020_recompensas.sql`). Si no hay ninguna recompensa publicada, la sección
+ * no se pinta: una cuadrícula vacía prometería algo que no está.
  */
 export const metadata: Metadata = {
   title: "Mis puntos",
@@ -95,7 +96,11 @@ export default async function PuntosPage() {
   if (!dashboard) redirect("/iniciar-sesion?siguiente=%2Fpuntos");
 
   const { perfil, membresia } = dashboard;
-  const reglas = await reglasActivas();
+  const [reglas, recompensas, pendientes] = await Promise.all([
+    reglasActivas(),
+    listarRecompensas(membresia.puntos),
+    canjesPendientes(),
+  ]);
 
   const conFoto = reglas.filter((r) => FOTO_REGLA[r.key]);
   const sinFoto = reglas.filter((r) => !FOTO_REGLA[r.key]);
@@ -176,6 +181,10 @@ export default async function PuntosPage() {
             </div>
           </div>
         </Card>
+
+        <Recompensas recompensas={recompensas} />
+
+        <CanjesPendientes canjes={pendientes} />
 
         {/* Cómo se ganan */}
         <section className="mt-10">
