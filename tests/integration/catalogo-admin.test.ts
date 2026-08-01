@@ -540,3 +540,141 @@ describe("foto del producto", () => {
     expect(r[0]!.de_auth).toBe(false);
   });
 });
+
+describe("categorías", () => {
+  const crear = (
+    nombre: string,
+    actor = duena,
+    motivo = "Sección nueva de temporada",
+    mundo = "matcha",
+    estado = "hoy"
+  ) =>
+    db.query<{ categoria_id: string; categoria_slug: string }>(
+      "select * from public.admin_catalogo_categoria_crear($1,$2,$3,$4,$5,$6,$7)",
+      [actor, nombre, null, mundo, estado, null, motivo]
+    );
+
+  it("crea la sección y le deriva el slug del nombre", async () => {
+    const r = await crear("Bebidas de Temporada");
+    // Sin acentos, sin espacios, en minúsculas: es un anclaje de URL.
+    expect(r.rows[0]!.categoria_slug).toBe("bebidas-de-temporada");
+
+    const c = await leerFresco<{ nombre_es: string; nombre_en: string; orden: number }>(
+      db,
+      "select nombre_es, nombre_en, orden from public.menu_categorias where id = $1",
+      [r.rows[0]!.categoria_id]
+    );
+    expect(c[0]!.nombre_es).toBe("Bebidas de Temporada");
+    // Sin traducción se repite el castellano, no se queda en blanco.
+    expect(c[0]!.nombre_en).toBe("Bebidas de Temporada");
+  });
+
+  it("quita acentos y signos al derivar el slug", async () => {
+    const r = await crear("Café  &  Matchá!!");
+    expect(r.rows[0]!.categoria_slug).toBe("cafe-matcha");
+  });
+
+  it("no admite dos secciones con el mismo nombre", async () => {
+    await crear("Repetida");
+    await expect(crear("Repetida")).rejects.toThrow(/slug_duplicado/);
+  });
+
+  it("rechaza mundo y estado que no existen", async () => {
+    await expect(crear("Rara", duena, "Motivo válido", "espacio")).rejects.toThrow(
+      /mundo_invalido/
+    );
+    await expect(crear("Rara", duena, "Motivo válido", "cafe", "algun-dia")).rejects.toThrow(
+      /estado_invalido/
+    );
+  });
+
+  it("renombrar NO cambia el slug, que es un enlace público", async () => {
+    const r = await crear("Nombre Viejo");
+    const id = r.rows[0]!.categoria_id;
+
+    await db.query(
+      "select * from public.admin_catalogo_categoria_editar($1,$2,$3,$4,$5,$6,$7,$8)",
+      [duena, id, "Nombre Nuevo", null, "cafe", "pronto", "12 oz", "Se corrige el nombre"]
+    );
+
+    const c = await leerFresco<{ slug: string; nombre_es: string; estado: string }>(
+      db,
+      "select slug, nombre_es, estado from public.menu_categorias where id = $1",
+      [id]
+    );
+    expect(c[0]!.slug).toBe("nombre-viejo");
+    expect(c[0]!.nombre_es).toBe("Nombre Nuevo");
+    expect(c[0]!.estado).toBe("pronto");
+  });
+
+  it("borra una sección vacía", async () => {
+    const r = await crear("Vacía");
+    await db.query("select * from public.admin_catalogo_categoria_borrar($1,$2,$3)", [
+      duena,
+      r.rows[0]!.categoria_id,
+      "Ya no se usa",
+    ]);
+
+    const quedan = await leerFresco(
+      db,
+      "select id from public.menu_categorias where id = $1",
+      [r.rows[0]!.categoria_id]
+    );
+    expect(quedan).toHaveLength(0);
+  });
+
+  it("NO borra una sección con productos dentro", async () => {
+    /*
+      El caso que importa. `menu_productos.categoria_id` es `on delete cascade`:
+      sin esta negativa, borrar la sección se llevaría en silencio productos que
+      alguien puede tener en favoritos o en un pedido.
+    */
+    const c = await leerFresco<{ id: string }>(
+      db,
+      "select id from public.menu_categorias where slug = 'matcha'"
+    );
+
+    await expect(
+      db.query("select * from public.admin_catalogo_categoria_borrar($1,$2,$3)", [
+        duena,
+        c[0]!.id,
+        "Quiero borrarla entera",
+      ])
+    ).rejects.toThrow(/categoria_con_productos/);
+
+    // Y los productos siguen ahí.
+    const productos = await leerFresco(
+      db,
+      "select id from public.menu_productos where categoria_id = $1",
+      [c[0]!.id]
+    );
+    expect(productos.length).toBeGreaterThan(0);
+  });
+
+  it("el mostrador no toca las secciones", async () => {
+    await expect(crear("Del empleado", empleado)).rejects.toThrow(/no_autorizado/);
+  });
+
+  it("exige motivo y nombre", async () => {
+    await expect(crear("Sin motivo", duena, "   ")).rejects.toThrow(/motivo_obligatorio/);
+    await expect(crear("  ", duena, "Motivo válido")).rejects.toThrow(/nombre_obligatorio/);
+  });
+
+  it("anon y authenticated NO pueden ejecutar ninguna de las tres", async () => {
+    const firmas = [
+      "public.admin_catalogo_categoria_crear(uuid,text,text,text,text,text,text,text)",
+      "public.admin_catalogo_categoria_editar(uuid,uuid,text,text,text,text,text,text,text)",
+      "public.admin_catalogo_categoria_borrar(uuid,uuid,text,text)",
+    ];
+    for (const firma of firmas) {
+      const r = await leerFresco<{ anon: boolean; auth: boolean }>(
+        db,
+        `select has_function_privilege('anon', $1, 'EXECUTE') as anon,
+                has_function_privilege('authenticated', $1, 'EXECUTE') as auth`,
+        [firma]
+      );
+      expect(r[0]!.anon).toBe(false);
+      expect(r[0]!.auth).toBe(false);
+    }
+  });
+});

@@ -8,6 +8,9 @@ import { enMinutos, limitar } from "@/lib/seguridad/rate-limit";
 import { nuevoRequestId } from "@/lib/api/respuesta";
 import {
   archivarSchema,
+  borrarCategoriaSchema,
+  crearCategoriaSchema,
+  editarCategoriaSchema,
   borrarVarianteSchema,
   crearVarianteSchema,
   crearProductoSchema,
@@ -57,7 +60,15 @@ function traducir(mensaje: string): string {
     ["no_autorizado", "No tienes permisos para esta operación."],
     ["motivo_obligatorio", "El motivo es obligatorio."],
     ["precio_invalido", "El precio no es válido."],
-    ["slug_duplicado", "Ya existe un producto con ese nombre."],
+    ["slug_duplicado", "Ya existe algo con ese nombre."],
+    // Categorías.
+    ["categoria_no_encontrada", "Esa sección ya no existe."],
+    [
+      "categoria_con_productos",
+      "Esa sección todavía tiene productos dentro. Archívalos o muévelos antes de borrarla: si no, se irían con ella.",
+    ],
+    ["mundo_invalido", "Ese mundo no existe."],
+    ["nombre_obligatorio", "El nombre es obligatorio."],
     ["slug_invalido", "El nombre no genera un identificador válido."],
     ["sin_variantes", "Hace falta al menos un precio."],
     ["ultima_variante", "No puedes quitar el último tamaño: el producto se quedaría sin precio."],
@@ -346,4 +357,90 @@ export async function borrarVariante(datos: unknown): Promise<Resultado> {
 
   revalidar();
   return { ok: true, mensaje: "Tamaño borrado." };
+}
+
+/* ── Categorías ──────────────────────────────────────────────────────────── */
+
+/**
+ * Crea una sección de la carta.
+ *
+ * El slug lo deriva SQL del nombre: es el anclaje público de la sección
+ * (`/menu#barra-de-matcha`) y dejarlo a mano invita a espacios y acentos que
+ * rompen el enlace en silencio.
+ */
+export async function crearCategoria(datos: unknown): Promise<Resultado> {
+  const parsed = crearCategoriaSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_catalogo_categoria_crear", {
+    p_actor_id: ctx.actor.id,
+    p_nombre_es: parsed.data.nombreEs,
+    p_nombre_en: parsed.data.nombreEn ?? null,
+    p_mundo: parsed.data.mundo,
+    p_estado: parsed.data.estado,
+    p_etiqueta_tamanos: parsed.data.etiquetaTamanos ?? null,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidar();
+  return { ok: true, mensaje: "Sección creada." };
+}
+
+/** Renombrar no cambia el slug: es un enlace público que puede estar impreso. */
+export async function editarCategoria(datos: unknown): Promise<Resultado> {
+  const parsed = editarCategoriaSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_catalogo_categoria_editar", {
+    p_actor_id: ctx.actor.id,
+    p_categoria_id: parsed.data.categoriaId,
+    p_nombre_es: parsed.data.nombreEs,
+    p_nombre_en: parsed.data.nombreEn ?? null,
+    p_mundo: parsed.data.mundo,
+    p_estado: parsed.data.estado,
+    p_etiqueta_tamanos: parsed.data.etiquetaTamanos ?? null,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidar();
+  return { ok: true, mensaje: "Sección actualizada." };
+}
+
+/**
+ * Borra una sección vacía.
+ *
+ * SQL se niega si tiene productos dentro, archivados incluidos: `categoria_id`
+ * es `on delete cascade`, así que borrarla se los llevaría por delante en
+ * silencio, y alguno podría estar en el favorito de alguien o en un pedido.
+ */
+export async function borrarCategoria(datos: unknown): Promise<Resultado> {
+  const parsed = borrarCategoriaSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_catalogo_categoria_borrar", {
+    p_actor_id: ctx.actor.id,
+    p_categoria_id: parsed.data.categoriaId,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidar();
+  return { ok: true, mensaje: "Sección borrada." };
 }

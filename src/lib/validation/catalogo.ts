@@ -137,3 +137,38 @@ export const borrarVarianteSchema = z.object({
   varianteId: z.string().uuid(),
   reason: motivo,
 });
+
+/* ── Categorías — `0023_catalogo_categorias.sql` ─────────────────────────── */
+
+/**
+ * El «mundo» decide el color de la sección en la carta. Son los cuatro del
+ * CHECK de la tabla y del tipo `Mundo`: no es texto libre.
+ */
+const mundo = z.enum(["cafe", "matcha", "piel", "comida"], {
+  message: "Elige a qué mundo pertenece.",
+});
+
+const estadoCategoria = z.enum(["hoy", "pronto"], { message: "Elige el estado." });
+
+const camposCategoria = {
+  nombreEs: z.string().trim().min(2, "Mínimo dos caracteres.").max(60, "Demasiado largo."),
+  /** Sin traducción se repite el castellano, que es mejor que un hueco. */
+  nombreEn: z.string().trim().max(60, "Demasiado largo.").optional(),
+  mundo,
+  estado: estadoCategoria,
+  /** Rótulo junto al título: «16 oz», «+ $1.00». Es decoración, no dato. */
+  etiquetaTamanos: z.string().trim().max(24, "Demasiado largo.").optional(),
+  reason: motivo,
+};
+
+export const crearCategoriaSchema = z.object(camposCategoria);
+
+export const editarCategoriaSchema = z.object({
+  categoriaId: z.string().uuid(),
+  ...camposCategoria,
+});
+
+export const borrarCategoriaSchema = z.object({
+  categoriaId: z.string().uuid(),
+  reason: motivo,
+});
