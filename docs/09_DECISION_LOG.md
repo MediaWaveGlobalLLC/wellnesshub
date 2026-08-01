@@ -185,6 +185,44 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
   - El Matcha Bar del flyer se solapa con la sección «Barra de Matcha» que ya estaba (Fresa Glow ≈ Strawberry, Mango Radiance ≈ Mango, Plátano Mellow ≈ Banana & Honey). Conviven a propósito: nombres, precio y descripción son los del flyer. Si se prefiere una sola, se archiva la otra desde el panel.
   - «¡Mas!» del Coffee Bar no se sembró como producto; queda como nota de la fila («Y más en barra»).
 
+### DEC-012 — El icono de la app es el isotipo, no el logotipo entero
+
+- **Estado:** aprobada (petición escrita del dueño, 2026-08-01: «ocupo q el favicon pongas el logo de siembra»)
+- **Contexto:** `src/app/favicon.ico` era el icono por defecto de Next.js. La marca no aparecía en ninguna pestaña, ni al guardar la web en la pantalla de inicio de un móvil.
+- **El conflicto:** `docs/11` dice **«no recortar logos»**, y el logotipo oficial mide 2483 × 1164 — 2,13 a 1. Un icono es cuadrado. Metido entero ahí, «SIEMBRA» ocuparía 32 × 15 píxeles: no sería el logo pequeño, sería una mancha marrón. Cumplir la regla al pie de la letra habría producido exactamente lo que la regla existe para evitar.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Qué se pinta | El **isotipo**: el sol con el grano de café | Es el elemento que la marca ya usa como sello, y es lo único que sobrevive a 32 píxeles |
+  | Cómo se recorta | Lo **mide** un script sobre el SVG rasterizado, no se escribe a ojo | Si el arte cambia, el encuadre cambia con él. Nadie vuelve a abrir un editor |
+  | De dónde sale | `public/brand/logos/logo-beige.svg`, el vector oficial | Ni un trazo redibujado: es reencuadre y cambio de color, ambos sobre el arte original |
+  | Colores | Grano oat `#FFD89E` sobre espresso `#45200A` | Pareja del Brand Book. Un cuadrado macizo se ve igual sobre una barra de pestañas clara que sobre una oscura, cosa que un fondo transparente no puede prometer |
+  | El de 16 px | Solo el **grano** | A ese tamaño los rayos miden menos de un píxel: no se ven finos, se ven como un borrón. Un `.ico` admite arte distinto por tamaño justamente para esto |
+  | Ficheros | `favicon.ico` (16/32/48), `icon.png` (512), `apple-icon.png` (180) | Next los enlaza solo por estar en `src/app/`. El de iOS va con fondo macizo y sin redondear: el sistema recorta las esquinas él |
+
+- **Alternativas consideradas:** meter el logotipo completo centrado en el cuadrado, sin recortar nada. Se descarta porque el resultado es ilegible a cualquier tamaño real de pestaña — respetaría la letra de `docs/11` y traicionaría su motivo, que es que el arte de marca se vea como debe verse.
+- **Consecuencias:** `docs/11` queda actualizado con la excepción y con el comando (`npm run icons`). Los iconos son **derivados versionados**: se commitean generados, pero nadie los edita a mano; se regeneran desde el SVG.
+
+### DEC-013 — Se retira el café de bienvenida, pero no a quien ya lo tiene
+
+- **Estado:** aprobada (petición de la dueña, trasladada por el cliente el 2026-08-01: «la clienta quiere eliminar lo del cafe gratis con la recarga de 20$»)
+- **Contexto:** `0024_recarga_saldo` regalaba un café por la primera recarga de $20 o más. La promoción se anunciaba en tres sitios: la barra superior de la portada, un cartel en `/wallet` y el rótulo «Con café» sobre el botón de $20.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Dejar de otorgarlo | Se reescribe `confirmar_recarga` sin el bloque del café | — |
+  | Canjes **ya emitidos** | **No se tocan** | Cada código es un café que alguien se ganó con una recarga ya pagada. Borrarlos se lo quitaría sin avisar: se enteraría al pedirlo en el mostrador. Retirar una promoción es dejar de darla, no quitársela a quien la tiene |
+  | Fila `cafe_bienvenida` de `loyalty_rewards` | Se queda, con `activa = false` | Los canjes emitidos la apuntan por clave foránea; borrarla los rompería. Y `activa = false` es lo que la mantiene fuera de «canjea tus puntos», donde nunca estuvo |
+  | Cómo se apaga | Reescribiendo la función, **no** borrando la recompensa | La función ya tolera que falte —avisa y acredita igual—, así que borrarla también la mataría. Pero dejaría un `raise warning` en producción por cada primera recarga de $20, y un warning dice «esto está roto» cuando lo que hubo fue una decisión |
+  | `cafe_otorgado` en el retorno | Se mantiene, devolviendo siempre `false` | Quitar la columna obliga a un DROP y a cambiar el servicio y el webhook a la vez. Un despliegue a medias —función nueva, código viejo— reventaría el cobro de una recarga **ya pagada** |
+  | `esPrimeraRecarga()` | Borrada | Solo servía para decidir si se enseñaba el cartel. Una consulta a la base en cada carga de `/wallet` cuyo resultado ya no cambia nada es peor que no tenerla |
+  | Barra superior de la portada | Pasa a «Gana puntos con cada compra y canjéalos por recompensas» | **No podía quedarse como estaba**: seguiría prometiendo en la home un café que ya no se da. Lo que dice ahora no es una promoción sino lo que el programa hace a diario (`por_dolar` + `/puntos`), así que no caduca solo. Es texto honesto de relleno **hasta que la dueña decida qué quiere anunciar ahí** |
+
+- **Consecuencias:** las pruebas de `recarga-saldo` que garantizaban que el café se daba ahora garantizan lo contrario, y se añade una que emite un canje viejo y comprueba que sigue vivo y pendiente después de una recarga nueva. Si esa se pone en rojo, alguien está a punto de invalidar cafés de gente real.
+- **Pendiente de la dueña:** decidir el texto definitivo de la barra de la portada, y qué hacer con los cafés pendientes que queden sin canjear (`select count(*) from loyalty_redemptions where origen = 'promocion' and estado = 'pendiente'`).
+
 ## Plantilla
 
 ```md

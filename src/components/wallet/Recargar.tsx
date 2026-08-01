@@ -10,13 +10,16 @@ import { recargarSaldo } from "@/lib/recarga/acciones";
  * Recargar saldo con tarjeta.
  *
  * Tres importes fijos en vez de un campo libre: son dos toques en un móvil, y
- * el de $20 es exactamente el de la promoción que anuncia la portada, así que
- * va primero y marcado. Un campo vacío obliga a decidir una cifra desde cero,
- * que es justo donde la gente abandona.
+ * un campo vacío obliga a decidir una cifra desde cero, que es justo donde la
+ * gente abandona.
  *
  * El importe NO viaja como precio: se manda cuál de los tres y el servidor lo
  * comprueba contra su propia lista antes de construir la sesión de Stripe. Una
  * petición manipulada pide otro importe, no paga menos.
+ *
+ * El de $20 iba marcado «Con café» por la promoción de bienvenida, retirada por
+ * la dueña el 1 de agosto de 2026 (`0025_sin_cafe_bienvenida.sql`). Sigue
+ * primero por ser el más bajo, que es el orden natural, no por la promoción.
  */
 
 /**
@@ -28,12 +31,12 @@ import { recargarSaldo } from "@/lib/recarga/acciones";
  * cifras de escaparate, y el servidor sigue siendo quien manda.
  */
 const IMPORTES = [
-  { centavos: 2000, etiqueta: "$20", promo: true },
-  { centavos: 5000, etiqueta: "$50", promo: false },
-  { centavos: 10000, etiqueta: "$100", promo: false },
+  { centavos: 2000, etiqueta: "$20" },
+  { centavos: 5000, etiqueta: "$50" },
+  { centavos: 10000, etiqueta: "$100" },
 ];
 
-export function Recargar({ esPrimera }: { esPrimera: boolean }) {
+export function Recargar() {
   const [pendiente, iniciar] = useTransition();
   const [elegido, setElegido] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,13 +64,6 @@ export function Recargar({ esPrimera }: { esPrimera: boolean }) {
         Se paga con tarjeta y el crédito entra en tu cuenta en cuanto se confirma el pago.
       </p>
 
-      {esPrimera && (
-        <p className="mt-3 border-l-2 border-terracota bg-surface-muted px-4 py-3 text-sm leading-relaxed text-espresso">
-          <strong>Tu primera recarga de $20 o más lleva café gratis.</strong> Te aparecerá en Mis
-          puntos, con su código, para pedirlo en el mostrador.
-        </p>
-      )}
-
       <div className="mt-5 grid grid-cols-3 gap-3">
         {IMPORTES.map((i) => (
           <button
@@ -77,10 +73,10 @@ export function Recargar({ esPrimera }: { esPrimera: boolean }) {
             onClick={() => recargar(i.centavos)}
             aria-label={`Recargar ${i.etiqueta}`}
             className={[
-              // `px-2` en móvil, medido: con `px-4` el botón queda en 55px de
-              // contenido y «Con café» (54px con su tracking) parte en dos
-              // líneas a 375px. Con `px-2` entra de una a 375 y a 360; a 320
-              // vuelve a partirse, que es la degradación aceptable.
+              // `px-2` en móvil se midió para que «Con café» entrara en una
+              // línea a 375px. Ese rótulo ya no está, pero el `px-2` se queda:
+              // los tres botones siguen igual de cómodos y cambiarlo sería
+              // mover el diseño sin que nadie lo haya pedido.
               "flex flex-col items-center justify-center rounded-lg border px-2 py-5 transition-colors sm:px-4",
               "disabled:cursor-not-allowed disabled:opacity-60",
               elegido === i.centavos
@@ -89,11 +85,6 @@ export function Recargar({ esPrimera }: { esPrimera: boolean }) {
             ].join(" ")}
           >
             <span className="font-display text-2xl text-espresso">{i.etiqueta}</span>
-            {i.promo && esPrimera && (
-              <span className="mt-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-terracota">
-                Con café
-              </span>
-            )}
           </button>
         ))}
       </div>

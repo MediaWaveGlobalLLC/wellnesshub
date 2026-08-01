@@ -33,6 +33,23 @@ Ubicación: `public/brand/originals/`.
 - Usar `next/image` cuando aplique.
 - Registrar cada derivado en un manifest generado.
 - No recortar logos ni reescribirlos con texto HTML para simular el arte.
+  - **Única excepción, aprobada en DEC-012:** los iconos de aplicación
+    (`src/app/favicon.ico`, `icon.png`, `apple-icon.png`) encuadran el isotipo
+    —el sol con el grano— dejando fuera la palabra SIEMBRA. El logotipo mide
+    2483 × 1164: dentro del cuadrado de una pestaña, «SIEMBRA» ocuparía 32 × 15
+    píxeles y sería una mancha, no un logo. El encuadre lo **mide** el script
+    sobre el propio SVG, no se escribe a ojo, y no se redibuja ni un trazo.
+
+## Iconos de aplicación
+
+Se generan, no se dibujan:
+
+```
+npm run icons
+```
+
+`scripts/build-app-icons.mjs` los deriva de `public/brand/logos/logo-beige.svg`.
+Si el logo cambia, se vuelve a ejecutar y salen solos. No se editan a mano.
 
 ## Asset faltante
 
