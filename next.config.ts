@@ -28,6 +28,23 @@ const nextConfig: NextConfig = {
   // infiere mal la raíz del workspace.
   turbopack: { root: path.resolve(import.meta.dirname) },
 
+  experimental: {
+    serverActions: {
+      /*
+        El tope por defecto de Next es 1 MB, por debajo de los 2 MB que revisa
+        `revisarAvatar`. Con el defecto, una foto de entre 1 y 2 MB moría en el
+        parser con un error genérico y el mensaje «pesa más de 2 MB» no se
+        llegaba a ver nunca: dos frenos que no se hablan y el de fuera cortando
+        antes que el que sabe explicarse.
+
+        3 MB deja margen para la codificación multipart del formulario alrededor
+        de un archivo de 2 MB. El tope real sigue siendo el de la revisión, y el
+        del propio bucket detrás.
+      */
+      bodySizeLimit: "3mb",
+    },
+  },
+
   /*
     Fotos de perfil servidas desde el bucket `avatares`.
 
