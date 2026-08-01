@@ -271,3 +271,11 @@ export const recompensaSchema = z.object({
 export const entregarCanjeSchema = z.object({
   redemptionId: z.string().uuid(),
 });
+
+/* ── Pedidos — `0021_pedidos.sql` ────────────────────────────────────────── */
+
+export const avanzarPedidoSchema = z.object({
+  orderId: z.string().uuid(),
+  /** Solo avanza. Un pedido entregado no vuelve atrás. */
+  estado: z.enum(["preparando", "entregado"]),
+});

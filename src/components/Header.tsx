@@ -127,10 +127,10 @@ export function Header() {
             {lang === "es" ? "EN" : "ES"}
           </button>
 
-          {/* D7: "Ordena online" es un CTA, no un motor de pedidos. Apunta al menú
-              hasta que exista una URL de pedidos real. */}
+          {/* Desde `0021` ya existe la URL de pedidos real que D7 daba por
+              pendiente, así que el CTA deja de apuntar al menú. */}
           <Link
-            href="/menu"
+            href="/pedir"
             className="btn-pill hidden items-center bg-terracota px-5 text-[12px] font-bold uppercase tracking-[0.08em] text-surface transition-colors hover:bg-primary-hover sm:inline-flex"
           >
             {lang === "es" ? "Ordena online" : "Order online"}
@@ -238,7 +238,7 @@ export function Header() {
               )}
 
               <Link
-                href="/menu"
+                href="/pedir"
                 onClick={() => setOpen(false)}
                 className="btn-pill mt-4 flex justify-center bg-terracota px-6 text-sm font-bold uppercase tracking-widest text-surface"
               >

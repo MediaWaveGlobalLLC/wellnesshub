@@ -12,6 +12,7 @@ import {
   anularGiftCardSchema,
   aplicarReglaSchema,
   asistenciaSchema,
+  avanzarPedidoSchema,
   borrarEventoSchema,
   concederAdminSchema,
   crearEventoSchema,
@@ -81,6 +82,10 @@ function traducir(mensaje: string): string {
     ["canje_no_encontrado", "Ese canje ya no existe."],
     ["ya_entregada", "Ese canje ya se entregó."],
     ["canje_cancelado", "Ese canje está cancelado."],
+    // Pedidos.
+    ["pedido_no_encontrado", "Ese pedido ya no existe."],
+    ["pedido_sin_pagar", "Ese pedido todavía no está pagado."],
+    ["pedido_ya_entregado", "Ese pedido ya se entregó."],
     ["tarjeta_anulada", "Esa tarjeta está anulada. Reactívala antes de recargarla."],
     ["tarjeta_caducada", "Esa tarjeta caducó: recargarla no la haría canjeable."],
     ["importe_excesivo", "Una sola recarga no puede superar $5.000."],
@@ -277,6 +282,42 @@ export async function recargarGiftCard(datos: unknown): Promise<Resultado> {
   return {
     ok: true,
     mensaje: `Recargada. La tarjeta tiene ahora ${formatearDolares(saldo)} y su código vuelve a servir.`,
+  };
+}
+
+/* ── Pedidos ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Mueve un pedido por la cola de la barra.
+ *
+ * Solo avanza: pagado → preparando → entregado. Un pedido entregado no
+ * retrocede; si algo salió mal se arregla con un ajuste de saldo o de puntos,
+ * que son movimientos nuevos con su propio motivo (`docs/00`).
+ */
+export async function avanzarPedido(datos: unknown): Promise<Resultado> {
+  const parsed = avanzarPedidoSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(false);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  if (!actorPuede(ctx.actor, "despachar_pedidos")) {
+    return { ok: false, error: "No tienes permisos para esta operación." };
+  }
+
+  const { error } = await crearClienteServicio().rpc("admin_pedido_avanzar", {
+    p_actor_id: ctx.actor.id,
+    p_order_id: parsed.data.orderId,
+    p_nuevo_estado: parsed.data.estado,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidatePath("/admin/pedidos");
+  return {
+    ok: true,
+    mensaje: parsed.data.estado === "preparando" ? "En preparación." : "Entregado.",
   };
 }
 

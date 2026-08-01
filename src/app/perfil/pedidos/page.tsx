@@ -16,6 +16,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; tono: "exito" | "aviso" | "peligro" }> = {
+  // Ciclo de los pedidos por la web (`0021`).
+  pendiente_pago: { texto: "Sin pagar", tono: "peligro" },
+  pagado: { texto: "Pagado", tono: "aviso" },
+  preparando: { texto: "Preparando", tono: "aviso" },
+  entregado: { texto: "Entregado", tono: "exito" },
+  // Vocabulario de `0005`, conservado para lo que ya estuviera escrito.
   completado: { texto: "Completado", tono: "exito" },
   en_camino: { texto: "En camino", tono: "aviso" },
   cancelado: { texto: "Cancelado", tono: "peligro" },
