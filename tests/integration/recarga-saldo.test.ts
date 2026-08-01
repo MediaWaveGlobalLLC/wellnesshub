@@ -167,7 +167,15 @@ describe("confirmar el pago", () => {
   });
 });
 
-describe("café de bienvenida", () => {
+describe("café de bienvenida — promoción RETIRADA", () => {
+  /*
+    Hasta `0025_sin_cafe_bienvenida.sql` la primera recarga de $20 o más
+    regalaba un café. La dueña la retiró el 1 de agosto de 2026.
+
+    Estas pruebas eran las que garantizaban que el café se daba; ahora
+    garantizan lo contrario, y sobre todo la parte delicada: que retirar la
+    promoción no le quita nada a quien YA la tenía.
+  */
   async function cafes(): Promise<number> {
     const r = await leerFresco<{ n: string }>(
       db,
@@ -177,92 +185,75 @@ describe("café de bienvenida", () => {
     return Number(r[0]!.n);
   }
 
-  it("la primera recarga de $20 lo da, con su código y a coste cero", async () => {
+  it("la primera recarga de $20 ya NO da café", async () => {
     await prepararRecarga(2000, "cs_c1");
     const r = await confirmar("evt_c1", "cs_c1");
 
-    expect(r.rows[0]!.cafe_otorgado).toBe(true);
-
-    const canje = await leerFresco<{ nombre: string; costo_puntos: string; codigo: string; estado: string }>(
-      db,
-      "select nombre, costo_puntos, codigo, estado from public.loyalty_redemptions where user_id = $1",
-      [cliente]
-    );
-    expect(canje[0]!.nombre).toBe("Café de bienvenida");
-    // Cero, no el precio de catálogo: guardar 500 diría que pagó unos puntos
-    // que nunca tuvo.
-    expect(Number(canje[0]!.costo_puntos)).toBe(0);
-    expect(canje[0]!.estado).toBe("pendiente");
-    expect(canje[0]!.codigo.length).toBeGreaterThan(3);
+    expect(r.rows[0]!.cafe_otorgado).toBe(false);
+    // Ni café, ni fila de canje: la promoción no deja rastro nuevo.
+    expect(await cafes()).toBe(0);
   });
 
-  it("NO gasta ni un punto de la persona", async () => {
+  it("el saldo entra igual, que es lo único que la persona pagó", async () => {
     await prepararRecarga(2000, "cs_c2");
-    await confirmar("evt_c2", "cs_c2");
+    const r = await confirmar("evt_c2", "cs_c2");
 
-    const puntos = await leerFresco<{ n: string }>(
-      db,
-      "select count(*)::text as n from public.loyalty_transactions where user_id = $1 and points < 0",
-      [cliente]
-    );
-    expect(Number(puntos[0]!.n)).toBe(0);
-  });
-
-  it("por debajo de $20 no lo da", async () => {
-    await prepararRecarga(1500, "cs_c3");
-    const r = await confirmar("evt_c3", "cs_c3");
-    expect(r.rows[0]!.cafe_otorgado).toBe(false);
-    expect(await cafes()).toBe(0);
-  });
-
-  it("solo la PRIMERA vez, aunque recargue mil veces", async () => {
-    await prepararRecarga(2000, "cs_d1");
-    expect((await confirmar("evt_d1", "cs_d1")).rows[0]!.cafe_otorgado).toBe(true);
-
-    await prepararRecarga(10000, "cs_d2");
-    expect((await confirmar("evt_d2", "cs_d2")).rows[0]!.cafe_otorgado).toBe(false);
-
-    await prepararRecarga(5000, "cs_d3");
-    expect((await confirmar("evt_d3", "cs_d3")).rows[0]!.cafe_otorgado).toBe(false);
-
-    expect(await cafes()).toBe(1);
-  });
-
-  it("quien empezó con menos de $20 SÍ lo recibe en la siguiente", async () => {
-    /*
-      «Tus primeros $20» es sobre el importe, no sobre el orden. Quien prueba
-      con $5 y luego mete $20 cumple la promesa de la portada igual.
-    */
-    await prepararRecarga(500, "cs_e1");
-    expect((await confirmar("evt_e1", "cs_e1")).rows[0]!.cafe_otorgado).toBe(false);
-
-    await prepararRecarga(2000, "cs_e2");
-    expect((await confirmar("evt_e2", "cs_e2")).rows[0]!.cafe_otorgado).toBe(false);
-    // Con la regla «primera recarga pagada», la de $5 ya gastó el turno.
-    expect(await cafes()).toBe(0);
-  });
-
-  it("SI FALTA LA RECOMPENSA, LA RECARGA SIGUE ENTRANDO", async () => {
-    /*
-      Lo que la persona pagó no puede depender de que exista un regalo. Si
-      alguien borra la recompensa del catálogo, el saldo entra igual y el aviso
-      queda en los logs de Postgres.
-    */
-    await db.exec("delete from public.loyalty_rewards where clave = 'cafe_bienvenida'");
-
-    await prepararRecarga(2000, "cs_f1");
-    const r = await confirmar("evt_f1", "cs_f1");
-
-    expect(r.rows[0]!.cafe_otorgado).toBe(false);
     expect(Number(r.rows[0]!.saldo_cents)).toBe(2000);
     expect(await saldo()).toBe(2000);
   });
 
-  it("la recompensa del café NO sale en el catálogo de canjes", async () => {
-    // No es algo que se compre con puntos: es lo que regala la promoción.
+  it("ninguna recarga da café, sea del importe que sea", async () => {
+    for (const [i, importe] of [1500, 2000, 10000, 5000].entries()) {
+      await prepararRecarga(importe, `cs_d${i}`);
+      expect(
+        (await confirmar(`evt_d${i}`, `cs_d${i}`)).rows[0]!.cafe_otorgado,
+        `recarga de ${importe}`
+      ).toBe(false);
+    }
+    expect(await cafes()).toBe(0);
+  });
+
+  it("NO toca los cafés que ya se habían entregado", async () => {
+    /*
+      La parte que importa de verdad.
+
+      Cada código emitido es un café que alguien ya se ganó con una recarga ya
+      pagada. Retirar una promoción es dejar de darla, no quitársela a quien la
+      tiene: si esta prueba se pone en rojo, alguien está a punto de invalidar
+      cafés de gente real que se enteraría en el mostrador.
+    */
+    const recompensa = await leerFresco<{ id: string }>(
+      db, "select id from public.loyalty_rewards where clave = 'cafe_bienvenida'"
+    );
+    await db.query(
+      `insert into public.loyalty_redemptions
+         (user_id, reward_id, nombre, costo_puntos, codigo, estado, origen)
+       values ($1, $2, 'Café de bienvenida', 0, 'RC-VIEJO', 'pendiente', 'promocion')`,
+      [cliente, recompensa[0]!.id]
+    );
+
+    await prepararRecarga(2000, "cs_e1");
+    await confirmar("evt_e1", "cs_e1");
+
+    const vivo = await leerFresco<{ estado: string }>(
+      db, "select estado from public.loyalty_redemptions where codigo = 'RC-VIEJO'"
+    );
+    expect(vivo).toHaveLength(1);
+    expect(vivo[0]!.estado).toBe("pendiente");
+    // Y sigue siendo el único: la recarga nueva no añadió otro.
+    expect(await cafes()).toBe(1);
+  });
+
+  it("la recompensa sigue existiendo, y sigue fuera del catálogo", async () => {
+    /*
+      No se borra la fila aunque ya no se otorgue. Los canjes emitidos la
+      apuntan por clave foránea y borrarla los rompería; y `activa = false`
+      es lo que la mantiene fuera de «canjea tus puntos», donde nunca estuvo.
+    */
     const r = await leerFresco<{ activa: boolean }>(
       db, "select activa from public.loyalty_rewards where clave = 'cafe_bienvenida'"
     );
+    expect(r).toHaveLength(1);
     expect(r[0]!.activa).toBe(false);
   });
 });

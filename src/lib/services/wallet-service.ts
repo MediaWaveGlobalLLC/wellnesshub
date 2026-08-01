@@ -93,28 +93,13 @@ export async function obtenerWallet(
   };
 }
 
-/**
- * ¿Es la primera recarga de esta persona? — `0024_recarga_saldo.sql`.
- *
- * Decide si se le anuncia el café de bienvenida. Solo eso: quién lo recibe de
- * verdad lo decide `confirmar_recarga` dentro de la transacción del pago, con
- * la fila bloqueada. Aquí un resultado desactualizado enseñaría un cartel de
- * más, no regalaría nada.
- *
- * Lee con la sesión del usuario, así que RLS ya limita a sus propias filas.
- */
-export async function esPrimeraRecarga(): Promise<boolean> {
-  const supabase = await crearClienteServidor();
+/*
+  Aquí vivía `esPrimeraRecarga()`, que solo servía para decidir si se enseñaba
+  el cartel del café de bienvenida. Retirada la promoción
+  (`0025_sin_cafe_bienvenida.sql`), ya no queda nadie a quien le importe si una
+  recarga es la primera, así que se va con ella: una consulta a la base de datos
+  en cada carga de /wallet cuyo resultado no cambia nada es peor que no tenerla,
+  porque el día que alguien la vea creerá que decide algo.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { count } = await supabase
-    .from("wallet_topups")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pagada");
-
-  return (count ?? 0) === 0;
-}
+  Si vuelve a hacer falta, está en el historial: `git log -S esPrimeraRecarga`.
+*/

@@ -319,15 +319,21 @@ export const CLUB_BENEFICIOS = [
 ];
 
 /*
-  Oferta que anuncia la barra superior de la home.
+  Reclamo que anuncia la barra superior de la home.
 
-  ATENCIÓN A QUIEN VENGA DETRÁS: esto YA NO SALE DEL FLYER. El flyer oficial del
-  menú decía «Café gratis 1 vez al mes o 10% de descuento», y la dueña lo cambió
-  a la promoción de bienvenida el 30 de julio de 2026. No es una desviación del
-  material contractual que haya que «restaurar»: es una decisión de negocio
-  posterior, y volver al texto del flyer sería anunciar una oferta retirada.
+  ATENCIÓN A QUIEN VENGA DETRÁS: esto YA NO SALE DEL FLYER, y ha cambiado dos
+  veces. El flyer oficial del menú decía «Café gratis 1 vez al mes o 10% de
+  descuento»; la dueña lo cambió el 30 de julio de 2026 a la promoción de
+  bienvenida («deposita tus primeros $20 y recibe café gratis»), y retiró esa
+  promoción el 1 de agosto de 2026 (`0025_sin_cafe_bienvenida.sql`). Volver a
+  cualquiera de los dos textos anteriores sería anunciar una oferta retirada.
+
+  Lo que dice ahora NO es una promoción: es lo que el programa hace todos los
+  días —`por_dolar` da puntos por cada dólar y `/puntos` los canjea—, así que
+  no puede quedarse obsoleto porque nadie se acuerde de bajarlo. Es texto de
+  relleno honesto hasta que la dueña decida qué quiere anunciar ahí.
 */
 export const CLUB_OFERTA = {
-  es: "Deposita tus primeros $20 y recibe café gratis",
-  en: "Deposit your first $20 and get a free coffee",
+  es: "Gana puntos con cada compra y canjéalos por recompensas",
+  en: "Earn points on every purchase and redeem them for rewards",
 };

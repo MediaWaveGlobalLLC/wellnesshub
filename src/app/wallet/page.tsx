@@ -6,7 +6,7 @@ import { Alert, Card } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
 import { MovimientoFila } from "@/components/wallet/MovimientoFila";
 import { Recargar } from "@/components/wallet/Recargar";
-import { esPrimeraRecarga, obtenerWallet } from "@/lib/services/wallet-service";
+import { obtenerWallet } from "@/lib/services/wallet-service";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { formatearDolares } from "@/lib/loyalty";
 import { WalletIcon, GiftIcon, StarIcon, LeafIcon, CupIcon } from "@/components/icons";
@@ -60,8 +60,6 @@ export default async function WalletPage({
 
   const [wallet, { recarga }] = await Promise.all([obtenerWallet(), searchParams]);
   if (!wallet) redirect("/iniciar-sesion?siguiente=%2Fwallet");
-
-  const primeraRecarga = await esPrimeraRecarga();
 
   return (
     <div className="grain min-h-screen bg-leche pb-20 pt-28 sm:pt-32">
@@ -156,7 +154,7 @@ export default async function WalletPage({
           mira: primero cuánto tengo, luego en qué se fue, y entonces si añado.
         */}
         <section className="mt-5">
-          <Recargar esPrimera={primeraRecarga} />
+          <Recargar />
         </section>
 
         {/* Así funcionan tus créditos — bloque inferior del mockup 03 */}
