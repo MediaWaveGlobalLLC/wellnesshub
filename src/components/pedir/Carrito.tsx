@@ -8,7 +8,12 @@ import { Alert, Card } from "@/components/ui/Surface";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon, MasIcon, PapeleraIcon } from "@/components/icons";
 import { crearPedido, pagarConSaldo, pagarConTarjeta } from "@/lib/pedidos/acciones";
-import { precioLegible, type CategoriaCatalogo, type VarianteCatalogo } from "@/lib/catalogo/tipos";
+import {
+  precioLegible,
+  type CategoriaCatalogo,
+  type LineaPedido,
+  type VarianteCatalogo,
+} from "@/lib/catalogo/tipos";
 import { formatearDolares } from "@/lib/loyalty";
 import { cn } from "@/lib/cn";
 
@@ -21,15 +26,6 @@ import { cn } from "@/lib/cn";
  * costando lo que cuesta.
  */
 
-type Linea = {
-  varianteId: string;
-  productoId: string;
-  nombre: string;
-  etiqueta: string | null;
-  precioCents: number;
-  cantidad: number;
-};
-
 type Fase =
   | { paso: "eligiendo" }
   | { paso: "pagando"; orderId: string; orderNumber: string; totalCents: number }
@@ -38,13 +34,24 @@ type Fase =
 export function Carrito({
   categorias,
   saldoCents,
+  precargadas = [],
 }: {
   categorias: CategoriaCatalogo[];
   saldoCents: number;
+  /**
+   * Líneas con las que arranca el carrito: lo que venía en `?anadir=` desde
+   * favoritos, ya resuelto contra el catálogo en el servidor.
+   *
+   * Solo se leen AL MONTAR, y basta: el único sitio que enlaza con `?anadir=`
+   * es `/perfil/favoritos`, que es otra ruta, así que llegar aquí siempre monta
+   * el componente de cero. Si algún día se enlaza con `?anadir=` desde la
+   * propia `/pedir`, esto dejará de añadir nada y habrá que fusionarlas.
+   */
+  precargadas?: LineaPedido[];
 }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
-  const [lineas, setLineas] = useState<Linea[]>([]);
+  const [lineas, setLineas] = useState<LineaPedido[]>(precargadas);
   const [error, setError] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>({ paso: "eligiendo" });
 

@@ -92,3 +92,29 @@ export async function obtenerWallet(
     total,
   };
 }
+
+/**
+ * ¿Es la primera recarga de esta persona? — `0024_recarga_saldo.sql`.
+ *
+ * Decide si se le anuncia el café de bienvenida. Solo eso: quién lo recibe de
+ * verdad lo decide `confirmar_recarga` dentro de la transacción del pago, con
+ * la fila bloqueada. Aquí un resultado desactualizado enseñaría un cartel de
+ * más, no regalaría nada.
+ *
+ * Lee con la sesión del usuario, así que RLS ya limita a sus propias filas.
+ */
+export async function esPrimeraRecarga(): Promise<boolean> {
+  const supabase = await crearClienteServidor();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { count } = await supabase
+    .from("wallet_topups")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pagada");
+
+  return (count ?? 0) === 0;
+}

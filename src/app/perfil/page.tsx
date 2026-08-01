@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { obtenerDashboard } from "@/lib/services/profile-service";
 import { ErrorState } from "@/components/states";
 import { TarjetaCredito, TarjetaMembresia } from "@/components/perfil/TarjetasResumen";
+import { BotonSalir } from "@/components/perfil/BotonSalir";
 import {
   AccionesGrid,
   Actividad,
@@ -82,12 +83,20 @@ export default async function PerfilPage() {
                 {perfil.email && (
                   <p className="truncate text-sm text-text-muted">{perfil.email}</p>
                 )}
-                <Link
-                  href="/perfil/editar"
-                  className="mt-1 inline-block text-sm font-semibold text-terracota underline underline-offset-4"
-                >
-                  Editar perfil
-                </Link>
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <Link
+                    href="/perfil/editar"
+                    className="text-sm font-semibold text-terracota underline underline-offset-4"
+                  >
+                    Editar perfil
+                  </Link>
+                  {/*
+                    Salir, que hasta ahora no se podía. La acción existía desde
+                    la Fase 2 sin que la llamara nadie: se entraba y no había
+                    forma de cerrar la sesión salvo borrar las cookies.
+                  */}
+                  <BotonSalir />
+                </div>
               </div>
             </div>
           </div>

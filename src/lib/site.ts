@@ -11,7 +11,12 @@ export const SITE = {
   name: "Siembra Cafe",
   tagline: { es: "Wellness Hub | Coffee & Matcha Bar", en: "Wellness Hub | Coffee & Matcha Bar" },
   address: "1024 Ashford Avenue, Condado, San Juan, Puerto Rico",
-  phone: "(939) 835-0044",
+  /*
+    Número del local. Lo dio la dueña el 1 de agosto de 2026 y sustituye al
+    (939) 835-0044 que estaba transcrito del PDF: ese ya no atiende. Se toca
+    aquí y solo aquí — el pie, /visitanos y /privacidad leen esta constante.
+  */
+  phone: "(787) 299-3735",
   hours: "10:00 AM – 7:00 PM",
   instagram: "@thewellnesshubpr",
   instagramUrl: "https://www.instagram.com/thewellnesshubpr/",
@@ -313,8 +318,16 @@ export const CLUB_BENEFICIOS = [
   },
 ];
 
-/* Oferta real del club — flyer oficial del menú */
+/*
+  Oferta que anuncia la barra superior de la home.
+
+  ATENCIÓN A QUIEN VENGA DETRÁS: esto YA NO SALE DEL FLYER. El flyer oficial del
+  menú decía «Café gratis 1 vez al mes o 10% de descuento», y la dueña lo cambió
+  a la promoción de bienvenida el 30 de julio de 2026. No es una desviación del
+  material contractual que haya que «restaurar»: es una decisión de negocio
+  posterior, y volver al texto del flyer sería anunciar una oferta retirada.
+*/
 export const CLUB_OFERTA = {
-  es: "Café gratis 1 vez al mes o 10% de descuento",
-  en: "Free coffee once a month or 10% off",
+  es: "Deposita tus primeros $20 y recibe café gratis",
+  en: "Deposit your first $20 and get a free coffee",
 };

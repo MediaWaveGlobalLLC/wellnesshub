@@ -142,7 +142,24 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 - **Consecuencias:** se descubrió que `public/brand/optimized/` **no existía en disco**, está en `.gitignore` y ningún script del build lo generaba, mientras el manifiesto ya apuntaba ahí — toda imagen optimizada era un 404, incluido el hero de la portada. Se arregla con un `prebuild` que ejecuta `build-asset-manifest`.
 - **Nota de seguridad:** la CSP (`img-src 'self' data: blob:`) **no** es la salvaguarda que parece frente a imágenes remotas: `next/image` con `remotePatterns` las sirve desde el propio origen. La decisión se apoya en el modelo de datos, no en la CSP.
 
-### DEC-010 — «Coffee Party»: la carta del soft opening entra como sección propia
+### DEC-010 — Apagar un producto lo QUITA de la carta
+
+- **Estado:** aprobada (petición escrita de la dueña, 2026-08-01: «si en el area del catalogo se apaga un producto ... en el area de menu tambien se apague meaning que no se vea»)
+- **Contexto:** hasta hoy `disponible = false` significaba «Agotado»: el producto seguía en `/menu`, rotulado. La decisión estaba escrita en el código —«que no esté hoy no significa que deje de existir en la carta»— y la pantalla del panel la explicaba. No era lo que la dueña entiende por apagar: `audit_logs` registra **41 cambios de disponibilidad**, el último a las 05:31 del 1 de agosto de 2026, y el resultado fue una carta pública con **30 de 31 productos rotulados AGOTADO**. La sincronización nunca falló —`revalidatePath("/menu")` funciona y la carta reflejaba la base al instante—; lo que fallaba era el significado del interruptor.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | `disponible = false` | El producto **no se enseña** en `/menu` ni en «Todo el menú» de favoritos | Es lo que la dueña espera del interruptor, y un menú donde todo está agotado parece un local cerrado |
+  | Secciones vacías | No se enseñan | Un recuadro con título y nada debajo parece la página a medio cargar. Pasó con «Bebidas de Temporada», creada vacía |
+  | Todo apagado | `/menu` lo dice con una frase; no deja el titular solo | Es un estado alcanzable de verdad desde el panel |
+  | Un favorito apagado | En **su** ficha de favoritos sí se ve, con «Agotado hoy» y sin botón de pedir | Es suyo y lo guardó; ocultarlo sin explicación haría creer que se borró |
+  | Retirar (`archivado`) | Sin cambios | Sigue siendo la retirada indefinida, y no se borra por los favoritos que lo apuntan |
+
+- **Alternativas consideradas:** dejar el rótulo «Agotado» y enseñar a usar «Retirar». Se descarta porque obliga a distinguir dos conceptos para una sola intención, y porque el interruptor que ya se usó 41 veces debe hacer lo que parece que hace.
+- **Consecuencias:** con los datos del 1 de agosto de 2026 la carta pasa a enseñar **un solo producto** (Matcha Clásico); volver a encender el resto es decisión de negocio y se avisa por escrito. Se pierde la forma de anunciar «hoy no hay matcha» sin quitarlo de la carta: si hiciera falta, será un estado propio y no un efecto lateral de la disponibilidad.
+
+### DEC-011 — «Coffee Party»: la carta del soft opening entra como sección propia
 
 - **Estado:** aprobada (petición escrita del dueño, 2026-08-01: «quiero agregar al menu este pero la seccion de este menu se llamara Coffee Party usa los nombres precios y especificciones que vez en el menu», con el flyer adjunto)
 - **Contexto:** el flyer oficial del soft opening («SOFT OPENING PRESENTS — Coffee Party») lista once filas con precios propios. El flyer viñetea casi todas, pero las viñetas **no significan lo mismo** en cada fila, y esa es toda la decisión de modelado.
@@ -161,6 +178,7 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
   | `catalogo-fidelidad` | Pasa a validar **las nueve secciones de `MENU`**, no la tabla entera | Desde `0023` la dueña añade secciones desde el panel. Exigir que no haya nada más convierte el test en una alarma que salta cada vez que alguien hace su trabajo — la forma más rápida de enseñar a ignorar un test rojo. Las dos reglas que sí son del modelo (slug derivado del nombre, slug sin repetir) siguen comprobándose sobre **todo** el catálogo |
 
 - **Alternativas consideradas:** sembrar «Espresso», «Iced Latte» y «Cortadito» como productos sueltos del Coffee Bar. Descartado: `menu_productos.slug` es único global y `espresso` e `iced-latte` **ya existen** en la carta base a $2.75 y $7.25. Habrían sido dos productos casi iguales con precios muy distintos, y el segundo con nombre retorcido para esquivar la colisión. Una sola fila «Coffee Bar» con las tres opciones dentro dice lo mismo que el flyer y no ensucia el catálogo.
+- **Relación con DEC-010:** los once productos nacen **disponibles**, así que la carta pública deja de enseñar un solo producto. No es el arreglo de DEC-010 —volver a encender el resto sigue siendo decisión de negocio— pero sí significa que `/menu` vuelve a tener algo que enseñar sin que nadie toque un interruptor.
 - **Consecuencias / a confirmar con la dueña:**
   - El Coffee Bar queda a **$8.95 c/u** tal y como está impreso, incluido el espresso, que en la carta base son $2.75. Es precio de evento; si es una errata del flyer se corrige desde el panel sin desplegar.
   - El flyer rotula «Pan dulce» también bajo la Dupleta, debajo de las empanadas. Se ha dejado **solo** en los Rolls por parecer un arrastre de maquetación; si es intencionado, se añade desde el panel.

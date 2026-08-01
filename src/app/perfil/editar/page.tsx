@@ -3,9 +3,12 @@ import { redirect } from "next/navigation";
 
 import { SubpaginaShell } from "@/components/perfil/SubpaginaShell";
 import { EditarPerfilForm } from "@/components/perfil/EditarPerfilForm";
+import { FotoDePerfil } from "@/components/perfil/FotoDePerfil";
+import { Card } from "@/components/ui/Surface";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { formatearTelefono } from "@/lib/telefono";
+import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 
 export const metadata: Metadata = {
   title: "Editar perfil",
@@ -25,7 +28,7 @@ export default async function EditarPerfilPage() {
 
   const { data: perfil } = await supabase
     .from("profiles")
-    .select("first_name, last_name, phone, member_id, marketing_email_opt_in")
+    .select("first_name, last_name, phone, member_id, avatar_url, marketing_email_opt_in")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -37,6 +40,15 @@ export default async function EditarPerfilPage() {
       descripcion="Tus datos y cómo quieres que te escribamos."
     >
       <div className="max-w-xl">
+        {/* La foto va primero: es lo que se ve arriba en el perfil. */}
+        <Card className="mb-5 p-5 sm:p-6">
+          <FotoDePerfil
+            urlInicial={perfil.avatar_url}
+            respaldo={BRAND_ASSETS.duenaDeSiembraTransparente.src}
+            nombre={perfil.first_name ?? "tu cuenta"}
+          />
+        </Card>
+
         <EditarPerfilForm
           inicial={{
             firstName: perfil.first_name ?? "",
