@@ -35,8 +35,34 @@ export async function crearCheckout(
     return { ok: false, codigo: "sesion_requerida", mensaje: "Inicia sesión para comprar." };
   }
 
+  if (!servicioDisponible()) {
+    return {
+      ok: false,
+      codigo: "servicio_no_configurado",
+      mensaje: "La compra no está disponible ahora mismo.",
+    };
+  }
+
+  /*
+    El pedido lo escribe la clave de servicio, no la sesión del usuario.
+
+    `gift_card_orders` tiene RLS con política de SELECT y NINGUNA de INSERT
+    (`0001:253`), así que insertar con el cliente de sesión lo deniega Postgres
+    siempre: la compra fallaba con «No pudimos iniciar la compra» antes de
+    llegar a Stripe, y llevaba así desde que se construyó.
+
+    Se arregla por aquí y no abriendo una política de INSERT a propósito.
+    `docs/06` manda que las operaciones de gift cards se ejecuten server-side, y
+    dejar insertar al navegador permitiría crear pedidos con el importe que
+    quisiera: el webhook emite la tarjeta por `amount_cents` DE LA FILA, no por
+    lo que se cobró. La sesión sigue mandando en quién compra —`user.id` sale de
+    `getUser()`, no del cuerpo de la petición—, y el importe ya viene validado
+    por `checkoutSchema`.
+  */
+  const servicio = crearClienteServicio();
+
   // El pedido nace en 'pending'. Solo el webhook lo pasa a 'paid'.
-  const { data: pedido, error } = await supabase
+  const { data: pedido, error } = await servicio
     .from("gift_card_orders")
     .insert({
       purchaser_user_id: user.id,
@@ -50,6 +76,9 @@ export async function crearCheckout(
     .single();
 
   if (error || !pedido) {
+    // Se registra el motivo: sin esto, el fallo anterior fue invisible durante
+    // fases enteras y solo se veía «No pudimos iniciar la compra».
+    console.error("no se pudo crear el pedido de gift card:", error?.message);
     return { ok: false, codigo: "pedido_fallido", mensaje: "No pudimos iniciar la compra." };
   }
 
@@ -80,7 +109,7 @@ export async function crearCheckout(
 
     if (!sesion.url) throw new Error("Stripe no devolvió URL de checkout.");
 
-    await supabase
+    await servicio
       .from("gift_card_orders")
       .update({ stripe_checkout_session_id: sesion.id })
       .eq("id", pedido.id);
