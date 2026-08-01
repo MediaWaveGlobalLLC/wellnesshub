@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { stripe, stripeConfigurado, webhookSecretConfigurado } from "@/lib/stripe";
 import { emitirPorPago } from "@/lib/gift-cards/service";
+import { confirmarPagoPedido, TIPO_PEDIDO } from "@/lib/pedidos/service";
 
 /**
  * POST /api/stripe/webhook — `docs/05`.
@@ -60,6 +61,26 @@ export async function POST(request: NextRequest) {
   // Un pago aún no liquidado no emite nada: llegará el evento async.
   if (sesion.payment_status !== "paid") {
     return Response.json({ recibido: true, pendiente: sesion.payment_status });
+  }
+
+  /*
+    Desde `0021` por aquí pasan dos cosas: gift cards y pedidos del menú.
+
+    Se distinguen por `metadata.tipo`, que solo ponen los Checkout de pedido.
+    Sin marca se asume gift card, que es lo único que existía antes: así las
+    sesiones abiertas antes de este cambio siguen emitiendo su tarjeta en vez de
+    buscar un pedido que no existe.
+  */
+  if (sesion.metadata?.tipo === TIPO_PEDIDO) {
+    const pedido = await confirmarPagoPedido(evento.id, evento.type, sesion.id);
+
+    if (!pedido.ok) {
+      // 500 a propósito: Stripe reintentará y la idempotencia protege el reintento.
+      console.error(`[${evento.id}] confirmación de pedido falló: ${pedido.mensaje}`);
+      return new Response("fallo al confirmar el pedido", { status: 500 });
+    }
+
+    return Response.json({ recibido: true, yaProcesado: pedido.yaProcesado });
   }
 
   const resultado = await emitirPorPago(

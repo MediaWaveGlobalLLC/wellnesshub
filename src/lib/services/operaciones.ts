@@ -350,3 +350,49 @@ export async function listarPedidosGiftCard(
     }),
   };
 }
+
+/* ── Pedidos — `0021_pedidos.sql` ────────────────────────────────────────── */
+
+export type PedidoEnCola = {
+  id: string;
+  numero: string;
+  estado: "pagado" | "preparando";
+  totalCents: number;
+  metodoPago: "wallet" | "stripe" | null;
+  pagado: string | null;
+  persona: string | null;
+  email: string | null;
+  /** "2× Latte (12 oz) · 1× Matcha Clásico". Ya montado en SQL. */
+  lineas: string | null;
+};
+
+/** La cola de la barra: pagado y sin entregar, lo más viejo primero. */
+export async function listarColaPedidos(): Promise<PedidoEnCola[]> {
+  const { data, error } = await servicio().rpc("admin_pedidos_cola");
+  if (error) throw new Error(`No se pudo leer la cola: ${error.message}`);
+
+  type Fila = {
+    id: string;
+    order_number: string;
+    status: string;
+    total_cents: string;
+    metodo_pago: string | null;
+    pagado: string | null;
+    persona: string | null;
+    email: string | null;
+    lineas: string | null;
+  };
+
+  return ((data ?? []) as Fila[]).map((p) => ({
+    id: p.id,
+    numero: p.order_number,
+    estado: p.status as PedidoEnCola["estado"],
+    totalCents: Number(p.total_cents),
+    metodoPago: (p.metodo_pago as PedidoEnCola["metodoPago"]) ?? null,
+    pagado: p.pagado,
+    // El RPC devuelve cadena vacía si el perfil no tiene nombre todavía.
+    persona: p.persona && p.persona.length > 0 ? p.persona : null,
+    email: p.email,
+    lineas: p.lineas,
+  }));
+}

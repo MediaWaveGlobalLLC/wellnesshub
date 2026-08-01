@@ -104,6 +104,25 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 - **Desviaciones deliberadas de la referencia**, ambas por `docs/01`: sin emoji junto al saludo (DEC-003) y sin fotos para «Pastel o snack» ni «Experiencia», que no tienen asset aprobado y nacen sin imagen.
 - **Pendiente:** falta hacer pedidos y compras desde la cuenta (fase 3), con pago por Stripe y con saldo del wallet.
 
+### DEC-008 — Pedidos del menú para recoger, con pago por saldo o tarjeta
+
+- **Estado:** aprobada (decisión del dueño del negocio, sesión de 2026-07-31)
+- **Contexto:** `orders` existía desde `0005` y solo se leía — `/perfil/pedidos` pintaba un historial que nadie escribía nunca. Guardaba un total y ninguna línea, así que un pedido no podía decir de qué era. La regla de lealtad `por_dolar` llevaba desde `0005` marcada como imposible de disparar porque «la web no ve lo que se cobra en el mostrador».
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Qué se pide | El menú (`menu_productos` / `menu_variantes`), para recoger en el local | Es lo único con precios reales en la base. `/tienda` es un escaparate estático |
+  | Precio | Lo calcula `crear_pedido` leyendo el catálogo | `CLAUDE.md` §5: el cliente nunca escribe importes. Un carrito manipulado pide otra cosa, no paga menos |
+  | Pago | Saldo **o** tarjeta, nunca mezclado | Un pedido a medio pagar deja un estado en el que el dinero ya salió y el pedido aún no existe para la barra |
+  | Cierre | Solo un pago confirmado | La página de éxito no paga nada (`docs/06`), igual que en las gift cards |
+  | Estados | `pendiente_pago → pagado → preparando → entregado` | Vocabulario de recogida. Los de `0005` se conservan en el CHECK para no invalidar filas ya escritas |
+  | Puntos | `por_dolar` se aplica al confirmarse el pago | Un pedido por la web sí se ve, así que la regla por fin se puede disparar |
+  | Nombre y precio de la línea | Congelados | Igual que en `DEC-007`: subir el latte no puede reescribir el ticket de ayer |
+
+- **Consecuencias:** el webhook de Stripe pasa a atender dos cosas y las distingue por `metadata.tipo`. Sin marca se asume gift card, que es lo único que existía antes, para que las sesiones abiertas antes del cambio sigan emitiendo su tarjeta. El CTA «Ordena online» del header deja de apuntar a `/menu`: la URL de pedidos real que D7 daba por pendiente ya existe.
+- **Pendiente:** merch de `/tienda` (no tiene catálogo con precios), hora de recogida y aviso al cliente cuando el pedido esté listo.
+
 ## Plantilla
 
 ```md

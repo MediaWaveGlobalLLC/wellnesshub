@@ -36,6 +36,7 @@ export type Permiso =
   | "ver_recompensas"
   | "configurar_recompensas"
   | "entregar_recompensa"
+  | "despachar_pedidos"
   | "aplicar_regla"
   | "ver_salud"
   | "gestionar_admins";
@@ -92,6 +93,8 @@ const MATRIZ: Record<Permiso, readonly Rol[]> = {
   ver_recompensas: ["duena", "empleado"],
   configurar_recompensas: ["duena"],
   entregar_recompensa: ["duena", "empleado"],
+  // La cola de pedidos es barra pura: quien prepara, marca.
+  despachar_pedidos: ["duena", "empleado"],
   aplicar_regla: ["duena", "empleado"],
   // La salud técnica lleva identificadores de eventos de Stripe y quién está
   // bloqueado. No es información de barra.

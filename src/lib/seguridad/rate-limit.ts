@@ -23,7 +23,8 @@ export type Accion =
   | "admin_ajuste"
   | "admin_catalogo"
   | "admin_operaciones"
-  | "canje_recompensa";
+  | "canje_recompensa"
+  | "crear_pedido";
 
 export type Veredicto = { permitido: true } | { permitido: false; reintentarEn: number };
 
