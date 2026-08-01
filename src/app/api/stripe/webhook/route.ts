@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { stripe, stripeConfigurado, webhookSecretConfigurado } from "@/lib/stripe";
 import { emitirPorPago } from "@/lib/gift-cards/service";
 import { confirmarPagoPedido, TIPO_PEDIDO } from "@/lib/pedidos/service";
+import { confirmarPagoRecarga, TIPO_RECARGA } from "@/lib/recarga/service";
 
 /**
  * POST /api/stripe/webhook — `docs/05`.
@@ -81,6 +82,28 @@ export async function POST(request: NextRequest) {
     }
 
     return Response.json({ recibido: true, yaProcesado: pedido.yaProcesado });
+  }
+
+  // Recarga de saldo (`0024`). Es el único sitio donde el saldo sube: la página
+  // de éxito no acredita nada, igual que con las gift cards y los pedidos.
+  if (sesion.metadata?.tipo === TIPO_RECARGA) {
+    const recarga = await confirmarPagoRecarga(
+      evento.id,
+      evento.type,
+      sesion.id,
+      typeof sesion.payment_intent === "string" ? sesion.payment_intent : null
+    );
+
+    if (!recarga.ok) {
+      console.error(`[${evento.id}] confirmación de recarga falló: ${recarga.mensaje}`);
+      return new Response("fallo al confirmar la recarga", { status: 500 });
+    }
+
+    return Response.json({
+      recibido: true,
+      yaProcesado: recarga.yaProcesado,
+      cafe: recarga.cafeOtorgado,
+    });
   }
 
   const resultado = await emitirPorPago(

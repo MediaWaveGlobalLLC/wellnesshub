@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Card } from "@/components/ui/Surface";
+import { Alert, Card } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
 import { MovimientoFila } from "@/components/wallet/MovimientoFila";
-import { obtenerWallet } from "@/lib/services/wallet-service";
+import { Recargar } from "@/components/wallet/Recargar";
+import { esPrimeraRecarga, obtenerWallet } from "@/lib/services/wallet-service";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { formatearDolares } from "@/lib/loyalty";
 import { WalletIcon, GiftIcon, StarIcon, LeafIcon, CupIcon } from "@/components/icons";
@@ -50,11 +51,17 @@ const COMO_FUNCIONA = [
   },
 ];
 
-export default async function WalletPage() {
+export default async function WalletPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ recarga?: string }>;
+}) {
   if (!supabaseConfigurado()) redirect("/iniciar-sesion?siguiente=%2Fwallet");
 
-  const wallet = await obtenerWallet();
+  const [wallet, { recarga }] = await Promise.all([obtenerWallet(), searchParams]);
   if (!wallet) redirect("/iniciar-sesion?siguiente=%2Fwallet");
+
+  const primeraRecarga = await esPrimeraRecarga();
 
   return (
     <div className="grain min-h-screen bg-leche pb-20 pt-28 sm:pt-32">
@@ -65,6 +72,32 @@ export default async function WalletPage() {
         >
           ← Volver al perfil
         </Link>
+
+        {/*
+          Vuelta del Checkout.
+
+          Se dice «estamos confirmando», no «ya tienes el saldo»: quien acredita
+          es el webhook de Stripe, que puede tardar unos segundos. Prometer aquí
+          un saldo que todavía no está sería la forma más rápida de que alguien
+          crea que se perdió su dinero.
+        */}
+        {recarga === "ok" && (
+          <div className="mt-6">
+            <Alert titulo="Pago recibido">
+              <p>
+                Estamos confirmando la recarga con el banco. Tu saldo se actualiza solo en unos
+                segundos; si no lo ves, recarga esta página.
+              </p>
+            </Alert>
+          </div>
+        )}
+        {recarga === "cancelada" && (
+          <div className="mt-6">
+            <Alert titulo="Recarga cancelada">
+              <p>No se cobró nada. Puedes volver a intentarlo cuando quieras.</p>
+            </Alert>
+          </div>
+        )}
 
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
           {/* Saldo — tarjeta Forest del mockup 03 */}
@@ -117,6 +150,14 @@ export default async function WalletPage() {
             )}
           </Card>
         </div>
+
+        {/*
+          Recargar. Debajo del saldo y del historial, que es el orden en que se
+          mira: primero cuánto tengo, luego en qué se fue, y entonces si añado.
+        */}
+        <section className="mt-5">
+          <Recargar esPrimera={primeraRecarga} />
+        </section>
 
         {/* Así funcionan tus créditos — bloque inferior del mockup 03 */}
         <section className="mt-12">
