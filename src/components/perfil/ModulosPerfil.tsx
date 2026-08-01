@@ -13,6 +13,7 @@ import {
   StarIcon,
   ChatIcon,
 } from "@/components/icons";
+// `PinIcon` sigue importado: lo usa la ficha del próximo taller para el lugar.
 import { formatearPuntos } from "@/lib/loyalty";
 import type { ActividadReciente, ProximoEvento } from "@/lib/services/profile-service";
 import type { ItemDeMenu } from "@/lib/menu";
@@ -51,13 +52,28 @@ function hora(iso: string): string {
 
 /* ── Grid de acciones — mockup 02 ────────────────────────────────────────── */
 
+/*
+  Las seis tarjetas del mockup 02 pasan a cinco, y dos de ellas eran mentira.
+
+  · «Métodos de pago — Tarjetas y formas de pago guardadas» llevaba a `/wallet`
+    y no guarda ninguna tarjeta: Stripe cobra en su propio checkout y aquí no se
+    almacena ningún método. Prometía una pantalla que no existe.
+  · «Direcciones — Gestiona tus direcciones de entrega» llevaba a
+    `/perfil/editar`, que no tiene direcciones. Y no hace falta: no hay reparto.
+    La tabla `addresses` sigue en la base por si algún día lo hay; lo que se
+    retira es la promesa.
+
+  En su lugar entra «Mis puntos», que existe desde `0020_recompensas.sql` y solo
+  se alcanzaba desde la barra inferior del móvil: en un ordenador no había forma
+  de llegar a las recompensas.
+*/
 const ACCIONES = [
   { href: "/perfil/pedidos", Icono: BagIcon, titulo: "Mis pedidos", detalle: "Consulta el estado de tus pedidos." },
+  { href: "/puntos", Icono: StarIcon, titulo: "Mis puntos", detalle: "Tus puntos y lo que puedes canjear." },
   { href: "/perfil/favoritos", Icono: HeartIcon, titulo: "Mis favoritos", detalle: "Tus bebidas y productos favoritos." },
   { href: "/perfil/eventos", Icono: CalendarIcon, titulo: "Eventos y talleres", detalle: "Reserva y gestiona tus experiencias." },
-  { href: "/wallet", Icono: CardIcon, titulo: "Métodos de pago", detalle: "Tarjetas y formas de pago guardadas." },
-  { href: "/perfil/editar", Icono: PinIcon, titulo: "Direcciones", detalle: "Gestiona tus direcciones de entrega." },
-  { href: "/perfil/editar", Icono: GearIcon, titulo: "Configuración", detalle: "Preferencias y datos de tu cuenta." },
+  { href: "/wallet", Icono: CardIcon, titulo: "Mi crédito", detalle: "Saldo, movimientos y canjear una gift card." },
+  { href: "/perfil/editar", Icono: GearIcon, titulo: "Configuración", detalle: "Tus datos y preferencias de la cuenta." },
 ];
 
 export function AccionesGrid() {

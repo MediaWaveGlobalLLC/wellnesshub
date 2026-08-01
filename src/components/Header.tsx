@@ -11,6 +11,7 @@ import { NAV_PRINCIPAL } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { BagIcon, UserIcon } from "@/components/icons";
 import { useSesion } from "@/lib/sesion";
+import { BotonSalir } from "@/components/perfil/BotonSalir";
 import { cn } from "@/lib/cn";
 
 /**
@@ -216,13 +217,27 @@ export function Header() {
                 registro detrás del login cuesta gente.
               */}
               {conSesion ? (
-                <Link
-                  href="/perfil"
-                  onClick={() => setOpen(false)}
-                  className="block border-b border-espresso/10 py-3.5 font-display text-2xl text-espresso transition-colors hover:text-terracota"
-                >
-                  {lang === "es" ? "Cuenta" : "Account"}
-                </Link>
+                <>
+                  <Link
+                    href="/perfil"
+                    onClick={() => setOpen(false)}
+                    className="block border-b border-espresso/10 py-3.5 font-display text-2xl text-espresso transition-colors hover:text-terracota"
+                  >
+                    {lang === "es" ? "Cuenta" : "Account"}
+                  </Link>
+                  {/*
+                    Salir. En móvil el perfil se abre a menudo desde un teléfono
+                    prestado o desde la tablet del mostrador, así que cerrar
+                    sesión tiene que estar donde se busca —este menú— y no solo
+                    dentro del perfil.
+                  */}
+                  <div className="border-b border-espresso/10 py-3.5">
+                    <BotonSalir
+                      etiqueta={lang === "es" ? "Cerrar sesión" : "Sign out"}
+                      className="font-display text-2xl text-espresso transition-colors hover:text-terracota disabled:opacity-50"
+                    />
+                  </div>
+                </>
               ) : (
                 <>
                   <Link
