@@ -357,6 +357,11 @@ export type PedidoEnCola = {
   id: string;
   numero: string;
   estado: "pagado" | "preparando";
+  /** Lo que costó el pedido, sin propina. */
+  subtotalCents: number;
+  /** Propina que dejó quien pidió. Cero si no dejó (`0026_propina.sql`). */
+  propinaCents: number;
+  /** Subtotal + propina: lo que se cobró. */
   totalCents: number;
   metodoPago: "wallet" | "stripe" | null;
   pagado: string | null;
@@ -375,6 +380,8 @@ export async function listarColaPedidos(): Promise<PedidoEnCola[]> {
     id: string;
     order_number: string;
     status: string;
+    subtotal_cents: string;
+    propina_cents: string;
     total_cents: string;
     metodo_pago: string | null;
     pagado: string | null;
@@ -387,6 +394,8 @@ export async function listarColaPedidos(): Promise<PedidoEnCola[]> {
     id: p.id,
     numero: p.order_number,
     estado: p.status as PedidoEnCola["estado"],
+    subtotalCents: Number(p.subtotal_cents),
+    propinaCents: Number(p.propina_cents),
     totalCents: Number(p.total_cents),
     metodoPago: (p.metodo_pago as PedidoEnCola["metodoPago"]) ?? null,
     pagado: p.pagado,

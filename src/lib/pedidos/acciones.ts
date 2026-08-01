@@ -32,12 +32,36 @@ const carritoSchema = z.object({
     .max(40, "Demasiadas líneas en un pedido."),
   /** Uno por intento de envío: evita que un doble toque cree dos pedidos. */
   clientRequestId: z.string().uuid().optional(),
+  /**
+   * Propina, en centavos. El ÚNICO importe del pedido que sí viene del
+   * navegador, y con motivo: no tiene precio en el catálogo porque es una
+   * decisión de quien paga sobre su propio dinero (`0026_propina.sql`).
+   *
+   * El tope de $100 está aquí y otra vez en SQL. No es desconfianza del
+   * formulario: esta acción es una API, y quien llame por su cuenta se salta
+   * este `zod` entero.
+   */
+  propinaCents: z
+    .number()
+    .int("La propina tiene que ser una cantidad exacta.")
+    .min(0, "La propina no puede ser negativa.")
+    .max(10000, "La propina máxima por pedido es $100.")
+    .optional(),
 });
 
 const pagoSchema = z.object({ orderId: z.string().uuid() });
 
 export type ResultadoPedido =
-  | { ok: true; orderId: string; orderNumber: string; totalCents: number }
+  | {
+      ok: true;
+      orderId: string;
+      orderNumber: string;
+      /** Lo que cuestan las líneas, sin propina. Es la base de los puntos. */
+      subtotalCents: number;
+      propinaCents: number;
+      /** Subtotal + propina. Es lo que se cobra. */
+      totalCents: number;
+    }
   | { ok: false; error: string };
 
 export type ResultadoPago =
@@ -47,6 +71,7 @@ export type ResultadoPago =
 
 const ERRORES: Record<string, string> = {
   carrito_vacio: "Tu pedido está vacío.",
+  propina_invalida: "Esa propina no es válida. El máximo por pedido es $100.",
   carrito_demasiado_largo: "Demasiadas líneas en un pedido.",
   cantidad_invalida: "Alguna cantidad no es válida.",
   producto_no_encontrado: "Uno de los productos ya no está en el menú.",
@@ -97,6 +122,7 @@ export async function crearPedido(datos: unknown): Promise<ResultadoPedido> {
       cantidad: i.cantidad,
     })),
     p_client_request_id: parsed.data.clientRequestId ?? null,
+    p_propina_cents: parsed.data.propinaCents ?? 0,
   });
 
   if (error) return { ok: false, error: traducir(error.message) };
@@ -106,6 +132,8 @@ export async function crearPedido(datos: unknown): Promise<ResultadoPedido> {
     ok: true,
     orderId: fila.order_id,
     orderNumber: fila.order_number,
+    subtotalCents: Number(fila.subtotal_cents),
+    propinaCents: Number(fila.propina_cents),
     totalCents: Number(fila.total_cents),
   };
 }

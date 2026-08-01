@@ -87,11 +87,24 @@ beforeEach(async () => {
   await db.query("update public.menu_productos set disponible = true where id = $1", [prodLatte]);
 });
 
-const crearPedido = (userId: string, items: unknown[], intento: string | null = null) =>
-  db.query<{ order_id: string; order_number: string; total_cents: string }>(
-    "select * from public.crear_pedido($1, $2::jsonb, $3)",
-    [userId, JSON.stringify(items), intento]
-  );
+const crearPedido = (
+  userId: string,
+  items: unknown[],
+  intento: string | null = null,
+  propina = 0
+) =>
+  db.query<{
+    order_id: string;
+    order_number: string;
+    subtotal_cents: string;
+    propina_cents: string;
+    total_cents: string;
+  }>("select * from public.crear_pedido($1, $2::jsonb, $3, $4)", [
+    userId,
+    JSON.stringify(items),
+    intento,
+    propina,
+  ]);
 
 async function darSaldo(userId: string, centavos: number, clave = `saldo-${userId}-${centavos}`) {
   await db.query("select * from public.apply_wallet_transaction($1,$2,'promotion',$3)", [
@@ -406,5 +419,154 @@ describe("la cola del mostrador", () => {
     );
     expect(cola).toHaveLength(1);
     expect(cola[0]!.lineas).toContain("Latte");
+  });
+});
+
+describe("propina — 0026_propina.sql", () => {
+  /*
+    La propina es el único importe del pedido que no sale del catálogo: la
+    elige quien paga. Estas pruebas cubren lo que eso implica.
+
+    Lo delicado no es sumarla, es dónde NO tiene que aparecer: los puntos se
+    dan por lo que se compra. Dar puntos por la propina es pagarle a alguien
+    por ser generoso con otra persona.
+  */
+
+  it("entra en el total y se guarda aparte del subtotal", async () => {
+    // 2 lattes de 6.25 = 12.50, más 2.00 de propina.
+    const r = await crearPedido(ana, [{ variante_id: varLatte, cantidad: 2 }], null, 200);
+
+    expect(Number(r.rows[0]!.subtotal_cents)).toBe(1250);
+    expect(Number(r.rows[0]!.propina_cents)).toBe(200);
+    expect(Number(r.rows[0]!.total_cents)).toBe(1450);
+
+    const fila = await leerFresco<{
+      subtotal_cents: string;
+      propina_cents: string;
+      total_cents: string;
+    }>(
+      db,
+      "select subtotal_cents, propina_cents, total_cents from public.orders where id = $1",
+      [r.rows[0]!.order_id]
+    );
+    expect(Number(fila[0]!.subtotal_cents)).toBe(1250);
+    expect(Number(fila[0]!.propina_cents)).toBe(200);
+    expect(Number(fila[0]!.total_cents)).toBe(1450);
+  });
+
+  it("sin propina el pedido cuesta exactamente lo de antes", async () => {
+    const r = await crearPedido(ana, [{ variante_id: varLatte, cantidad: 2 }]);
+    expect(Number(r.rows[0]!.propina_cents)).toBe(0);
+    expect(Number(r.rows[0]!.total_cents)).toBe(1250);
+    expect(Number(r.rows[0]!.subtotal_cents)).toBe(1250);
+  });
+
+  it("el saldo se descuenta CON la propina", async () => {
+    await darSaldo(ana, 2000, "propina-saldo");
+    const r = await crearPedido(ana, [{ variante_id: varLatte, cantidad: 2 }], null, 200);
+
+    await db.query("select * from public.pagar_pedido_con_saldo($1, $2)", [
+      ana,
+      r.rows[0]!.order_id,
+    ]);
+
+    // 20.00 − 14.50. Si el cobro usara el subtotal quedarían 7.50 y el local
+    // se estaría comiendo la propina de su propio bolsillo.
+    expect(await saldo(ana)).toBe(550);
+  });
+
+  it("los puntos NO cuentan la propina", async () => {
+    await db.query("update public.loyalty_rules set active = true where key = 'por_dolar'");
+    await darSaldo(ana, 5000, "propina-puntos");
+
+    // Subtotal 12.50 → 12 puntos. Con la propina el total es 14.50: si se
+    // contara, saldrían 14.
+    const r = await crearPedido(ana, [{ variante_id: varLatte, cantidad: 2 }], null, 200);
+    await db.query("select * from public.pagar_pedido_con_saldo($1, $2)", [
+      ana,
+      r.rows[0]!.order_id,
+    ]);
+
+    expect(await puntos(ana)).toBe(12);
+  });
+
+  it("rechaza una propina negativa o por encima de $100", async () => {
+    /*
+      El tope no es desconfianza: un teclado móvil convierte «2.00» en 200000
+      con una pulsación despistada, y sin techo eso es un cobro de dos mil
+      dólares por dos cafés.
+    */
+    await expect(
+      crearPedido(ana, [{ variante_id: varLatte, cantidad: 1 }], null, -1)
+    ).rejects.toThrow(/propina_invalida/);
+
+    await expect(
+      crearPedido(ana, [{ variante_id: varLatte, cantidad: 1 }], null, 10001)
+    ).rejects.toThrow(/propina_invalida/);
+
+    // $100 clavados sí entran: el tope es inclusivo.
+    const r = await crearPedido(ana, [{ variante_id: varLatte, cantidad: 1 }], null, 10000);
+    expect(Number(r.rows[0]!.propina_cents)).toBe(10000);
+  });
+
+  it("un pedido rechazado por la propina no deja nada a medias", async () => {
+    // La validación va ANTES del insert, así que no queda ni la cabecera del
+    // pedido ni un número de pedido gastado.
+    await expect(
+      crearPedido(ana, [{ variante_id: varLatte, cantidad: 1 }], null, 99999)
+    ).rejects.toThrow(/propina_invalida/);
+
+    const filas = await leerFresco<{ n: string }>(
+      db,
+      "select count(*)::text as n from public.orders where user_id = $1",
+      [ana]
+    );
+    expect(Number(filas[0]!.n)).toBe(0);
+  });
+
+  it("reenviar el mismo intento devuelve la propina de ENTONCES", async () => {
+    /*
+      El identificador de intento es la petición, no el carrito. Si alguien
+      toca «Continuar» dos veces, la segunda no puede cambiar lo que ya se
+      calculó: sería la misma petición cobrando otra cosa.
+    */
+    const intento = "11111111-1111-4111-8111-111111111111";
+    const uno = await crearPedido(
+      ana,
+      [{ variante_id: varLatte, cantidad: 1 }],
+      intento,
+      300
+    );
+    const dos = await crearPedido(
+      ana,
+      [{ variante_id: varLatte, cantidad: 1 }],
+      intento,
+      900
+    );
+
+    expect(dos.rows[0]!.order_id).toBe(uno.rows[0]!.order_id);
+    expect(Number(dos.rows[0]!.propina_cents)).toBe(300);
+    expect(Number(dos.rows[0]!.total_cents)).toBe(925);
+  });
+
+  it("la cola de la barra enseña la propina, no solo el total", async () => {
+    // Una propina que nadie ve es una propina que nadie reparte.
+    await darSaldo(ana, 5000, "propina-cola");
+    const r = await crearPedido(ana, [{ variante_id: varLatte, cantidad: 1 }], null, 150);
+    await db.query("select * from public.pagar_pedido_con_saldo($1, $2)", [
+      ana,
+      r.rows[0]!.order_id,
+    ]);
+
+    const cola = await leerFresco<{
+      subtotal_cents: string;
+      propina_cents: string;
+      total_cents: string;
+    }>(db, "select * from public.admin_pedidos_cola()");
+
+    expect(cola).toHaveLength(1);
+    expect(Number(cola[0]!.subtotal_cents)).toBe(625);
+    expect(Number(cola[0]!.propina_cents)).toBe(150);
+    expect(Number(cola[0]!.total_cents)).toBe(775);
   });
 });
