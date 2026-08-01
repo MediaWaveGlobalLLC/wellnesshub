@@ -48,6 +48,22 @@ export type ProductoCatalogo = {
   variantes: VarianteCatalogo[];
 };
 
+/**
+ * Una línea del carrito.
+ *
+ * Vive aquí y no dentro del componente porque la usan los dos lados: el
+ * carrito, que corre en el navegador, y `/pedir`, que resuelve en el servidor
+ * lo que llega por `?anadir=` desde favoritos.
+ */
+export type LineaPedido = {
+  varianteId: string;
+  productoId: string;
+  nombre: string;
+  etiqueta: string | null;
+  precioCents: number;
+  cantidad: number;
+};
+
 export type CategoriaCatalogo = {
   id: string;
   slug: string;
@@ -78,6 +94,28 @@ export function precioLegible(centavos: number): string {
  */
 export function precioDeCarta(variantes: VarianteCatalogo[]): string {
   return variantes.map((v) => precioLegible(v.precioCents)).join(" / ");
+}
+
+/**
+ * La carta PÚBLICA: solo lo que se puede pedir ahora mismo.
+ *
+ * Apagar un producto en el panel lo quita de la vista. Antes se quedaba en la
+ * carta con el rótulo «Agotado», y el 1 de agosto de 2026 eso dejó la portada
+ * del local con treinta de treinta y un productos marcados como agotados: la
+ * dueña los apagaba esperando que desaparecieran. Un menú donde no hay nada es
+ * peor que un menú más corto.
+ *
+ * Retirar (`archivado`) sigue siendo otra cosa: aquello no vuelve solo, y el
+ * servicio ya lo filtra antes de llegar hasta aquí.
+ *
+ * También caen las secciones que se quedan vacías —incluida una recién creada
+ * a la que todavía no se le ha puesto nada—: un recuadro con un título y nada
+ * debajo no informa de nada.
+ */
+export function soloDisponibles(categorias: CategoriaCatalogo[]): CategoriaCatalogo[] {
+  return categorias
+    .map((c) => ({ ...c, productos: c.productos.filter((p) => p.disponible) }))
+    .filter((c) => c.productos.length > 0);
 }
 
 /** Variante más barata. Es la que se preselecciona al añadir al carrito. */

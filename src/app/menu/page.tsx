@@ -7,7 +7,12 @@ import { Reveal } from "@/components/Reveal";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { LeafIcon } from "@/components/icons";
 import { obtenerCatalogo } from "@/lib/catalogo/service";
-import { precioDeCarta, type CategoriaCatalogo, type Mundo } from "@/lib/catalogo/tipos";
+import {
+  precioDeCarta,
+  soloDisponibles,
+  type CategoriaCatalogo,
+  type Mundo,
+} from "@/lib/catalogo/tipos";
 
 /**
  * /menu — carta oficial.
@@ -110,13 +115,11 @@ function Seccion({ seccion, indice }: { seccion: CategoriaCatalogo; indice: numb
                     ({producto.nota})
                   </span>
                 )}
-                {/* Agotado se marca aquí y no se oculta el producto: que no
-                    esté hoy no significa que deje de existir en la carta. */}
-                {!producto.disponible && (
-                  <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                    Agotado
-                  </span>
-                )}
+                {/*
+                  Ya no hay rótulo «Agotado»: lo que se apaga en el panel no
+                  llega hasta aquí. `soloDisponibles` lo filtra antes, así que
+                  todo lo que se pinta en esta lista se puede pedir.
+                */}
               </span>
               <span className="mx-1 flex-1 border-b border-dotted border-espresso/25" />
               <span className="shrink-0 font-display text-lg text-espresso">
@@ -132,8 +135,11 @@ function Seccion({ seccion, indice }: { seccion: CategoriaCatalogo; indice: numb
 
 export default async function MenuPage() {
   const { categorias } = await obtenerCatalogo();
-  const hoy = categorias.filter((c) => c.estado === "hoy");
-  const pronto = categorias.filter((c) => c.estado === "pronto");
+
+  // Lo apagado en el panel no llega a la carta. Ver `soloDisponibles`.
+  const visibles = soloDisponibles(categorias);
+  const hoy = visibles.filter((c) => c.estado === "hoy");
+  const pronto = visibles.filter((c) => c.estado === "pronto");
 
   return (
     <>
@@ -167,7 +173,13 @@ export default async function MenuPage() {
         </div>
       </section>
 
-      {/* Disponible hoy */}
+      {/*
+        Disponible hoy.
+
+        Con todo apagado esto se queda sin secciones, y un titular seguido de
+        nada parece la página a medio cargar. Entonces se dice lo que pasa. Es
+        un estado alcanzable de verdad: el panel permite apagarlo todo.
+      */}
       <section className="bg-leche pb-16">
         <div className="mx-auto max-w-[var(--container-content)] px-5 sm:px-8">
           <div className="flex items-center gap-3">
@@ -175,11 +187,18 @@ export default async function MenuPage() {
             <Badge tono="exito">Disponible</Badge>
           </div>
 
-          <div className="mt-7 grid gap-6 md:grid-cols-2">
-            {hoy.map((s, i) => (
-              <Seccion key={s.id} seccion={s} indice={i} />
-            ))}
-          </div>
+          {hoy.length === 0 ? (
+            <p className="mt-6 max-w-xl leading-relaxed text-text-muted">
+              Estamos actualizando la carta. Escríbenos por Instagram o pásate por el local y te
+              contamos qué hay hoy.
+            </p>
+          ) : (
+            <div className="mt-7 grid gap-6 md:grid-cols-2">
+              {hoy.map((s, i) => (
+                <Seccion key={s.id} seccion={s} indice={i} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

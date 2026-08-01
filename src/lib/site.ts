@@ -11,7 +11,12 @@ export const SITE = {
   name: "Siembra Cafe",
   tagline: { es: "Wellness Hub | Coffee & Matcha Bar", en: "Wellness Hub | Coffee & Matcha Bar" },
   address: "1024 Ashford Avenue, Condado, San Juan, Puerto Rico",
-  phone: "(939) 835-0044",
+  /*
+    Número del local. Lo dio la dueña el 1 de agosto de 2026 y sustituye al
+    (939) 835-0044 que estaba transcrito del PDF: ese ya no atiende. Se toca
+    aquí y solo aquí — el pie, /visitanos y /privacidad leen esta constante.
+  */
+  phone: "(787) 299-3735",
   hours: "10:00 AM – 7:00 PM",
   instagram: "@thewellnesshubpr",
   instagramUrl: "https://www.instagram.com/thewellnesshubpr/",

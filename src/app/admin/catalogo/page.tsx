@@ -61,9 +61,11 @@ export default async function CatalogoPage() {
 
       <Alert titulo="Agotado no es lo mismo que retirar">
         <p>
-          <strong>Agotado</strong> se usa para hoy: el producto sigue en la carta, tachado, y vuelve
-          cuando lo repongas. <strong>Retirar</strong> lo saca de la carta hasta nuevo aviso; no se
-          borra, porque hay gente que lo tiene guardado en favoritos.
+          <strong>Agotado</strong> se usa para hoy: el producto <strong>desaparece</strong> de la
+          carta y del pedido en línea, y vuelve en cuanto lo marques disponible. Una sección que se
+          queda sin nada disponible tampoco se enseña.{" "}
+          <strong>Retirar</strong> lo saca hasta nuevo aviso; no se borra, porque hay gente que lo
+          tiene guardado en favoritos.
         </p>
       </Alert>
 
