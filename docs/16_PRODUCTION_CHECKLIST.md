@@ -104,11 +104,20 @@ oficial y sin tocar ningún color de marca:
   No se han congelado.
 - **Simulacro de backup y restauración.** Requiere acceso al panel de Supabase.
   Sin hacer.
-- **Selector EN.** D15 fijó español. El selector solo afecta ya a `/nosotros` y
-  `/visitanos`; falta decidir si se retira.
-- **Copia de la barra de anuncio.** Dice «Café gratis 1 vez al mes» en lugar del
-  «envío gratis +$25» del mockup, porque no existe tienda en línea. Falta
-  confirmarla.
+- **Selector EN.** D15 fijó español. El selector afecta ya a `/nosotros`,
+  `/visitanos` y a la barra de anuncio; falta decidir si se retira.
+- ~~**Copia de la barra de anuncio.**~~ RESUELTO el 30 de julio de 2026. Nunca
+  fue el «envío gratis +$25» del mockup —no hay tienda en línea— y ya tampoco es
+  el «café gratis 1 vez al mes» del flyer: la dueña la cambió a la promoción de
+  bienvenida, «Deposita tus primeros $20 y recibe café gratis». Vive en
+  `CLUB_OFERTA` (`src/lib/site.ts`), con la advertencia de que ese texto YA NO
+  sale del material contractual y no hay que «restaurarlo» al del flyer.
+
+  Queda una pieza de negocio, no de código: **la web no tiene forma de depositar
+  $20**. Hoy solo entra crédito canjeando una gift card (`/wallet/canjear`) o
+  cargándolo desde la ficha de la persona en administración. Si la promoción se
+  atiende en el mostrador, no hay nada que hacer; si se espera que se haga desde
+  la web, falta construir esa recarga.
 - **Cuenta de prueba** `siembra.fase2.…@mailinator.com` en producción. El SQL de
   limpieza está en `scripts/seed-dev.mjs`.
 - **Hora del evento sembrado**, ya visible en `/comunidad`:

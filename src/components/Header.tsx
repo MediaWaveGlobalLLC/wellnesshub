@@ -58,7 +58,12 @@ export function Header() {
       {enHome && (
         <div className="bg-terracota text-center text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-surface">
           <p className="mx-auto max-w-[var(--container-content)] px-5 py-2.5 sm:px-8">
-            Club SIEMBRA · {CLUB_OFERTA.es}
+            {/*
+              Sigue al selector de idioma. Estaba fijado a `.es`, así que la
+              traducción existía en `site.ts` y no se llegaba a ver nunca:
+              alguien en inglés leía toda la web traducida menos esta línea.
+            */}
+            Club SIEMBRA · {CLUB_OFERTA[lang]}
           </p>
         </div>
       )}
