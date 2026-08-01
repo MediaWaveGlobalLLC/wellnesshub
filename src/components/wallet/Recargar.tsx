@@ -77,7 +77,11 @@ export function Recargar({ esPrimera }: { esPrimera: boolean }) {
             onClick={() => recargar(i.centavos)}
             aria-label={`Recargar ${i.etiqueta}`}
             className={[
-              "flex flex-col items-center justify-center rounded-lg border px-4 py-5 transition-colors",
+              // `px-2` en móvil, medido: con `px-4` el botón queda en 55px de
+              // contenido y «Con café» (54px con su tracking) parte en dos
+              // líneas a 375px. Con `px-2` entra de una a 375 y a 360; a 320
+              // vuelve a partirse, que es la degradación aceptable.
+              "flex flex-col items-center justify-center rounded-lg border px-2 py-5 transition-colors sm:px-4",
               "disabled:cursor-not-allowed disabled:opacity-60",
               elegido === i.centavos
                 ? "border-terracota bg-surface-muted"
