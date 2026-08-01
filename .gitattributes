@@ -10,3 +10,16 @@
 # diferencia— y el mensaje de error, "modified CLAUDE.md", apunta justo al sitio
 # equivocado.
 * -text
+
+# Excepción: package-lock.json.
+#
+# La regla de arriba dice «lo que haya en disco es lo que se guarda», y npm
+# escribe el lock con el salto de línea de la máquina. Resultado: en Windows
+# salía en CRLF, y bastaba un `npm install` en otro equipo para producir un
+# commit de 9.602 líneas cambiadas cuyo contenido era idéntico. Y al revés al
+# siguiente. Ese ruido tapa los cambios de dependencias de verdad, que son los
+# que hay que mirar con lupa en un repo público.
+#
+# Fijarlo a LF es seguro: es un fichero GENERADO, no está entre los assets
+# protegidos por SHA-256 y ninguna comprobación depende de sus bytes exactos.
+package-lock.json text eol=lf
