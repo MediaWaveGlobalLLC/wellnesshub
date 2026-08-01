@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Alert, Card } from "@/components/ui/Surface";
 import { Button } from "@/components/ui/Button";
-import { MasIcon, PapeleraIcon } from "@/components/icons";
+import { CheckIcon, MasIcon, PapeleraIcon } from "@/components/icons";
 import { crearPedido, pagarConSaldo, pagarConTarjeta } from "@/lib/pedidos/acciones";
 import { precioLegible, type CategoriaCatalogo, type VarianteCatalogo } from "@/lib/catalogo/tipos";
 import { formatearDolares } from "@/lib/loyalty";
@@ -50,6 +50,28 @@ export function Carrito({
   /** Uno por intento de envío: un doble toque no crea dos pedidos. */
   const intento = useRef<string | null>(null);
 
+  /*
+    Confirmación de que el toque entró.
+
+    En móvil el resumen del pedido vive DEBAJO de toda la carta, fuera de
+    pantalla: tocabas un precio y no pasaba nada visible. La gente lo tocaba
+    tres veces creyendo que fallaba y acababa con tres unidades sin saberlo.
+    Esto guarda la última variante añadida para marcarla un segundo.
+  */
+  const [ultimoTocado, setUltimoTocado] = useState<string | null>(null);
+  const resumenRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!ultimoTocado) return;
+    const t = setTimeout(() => setUltimoTocado(null), 1200);
+    return () => clearTimeout(t);
+  }, [ultimoTocado]);
+
+  const unidades = useMemo(
+    () => lineas.reduce((s, l) => s + l.cantidad, 0),
+    [lineas]
+  );
+
   const total = useMemo(
     () => lineas.reduce((s, l) => s + l.precioCents * l.cantidad, 0),
     [lineas]
@@ -62,6 +84,7 @@ export function Carrito({
     variante: VarianteCatalogo
   ) {
     setError(null);
+    setUltimoTocado(variante.id);
     setLineas((previas) => {
       const i = previas.findIndex((l) => l.varianteId === variante.id);
       if (i >= 0) {
@@ -172,6 +195,7 @@ export function Carrito({
   }
 
   return (
+    <>
     <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
       {/* ── La carta ─────────────────────────────────────────────────────── */}
       <div className={cn(fase.paso === "pagando" && "pointer-events-none opacity-40")}>
@@ -193,19 +217,23 @@ export function Carrito({
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        {p.variantes.map((v) => (
-                          <Button
-                            key={v.id}
-                            type="button"
-                            size="md"
-                            variant="secundario"
-                            onClick={() => anadir(p, v)}
-                          >
-                            <MasIcon size={13} />
-                            {v.etiqueta ? `${v.etiqueta} · ` : ""}
-                            {precioLegible(v.precioCents)}
-                          </Button>
-                        ))}
+                        {p.variantes.map((v) => {
+                          const recienTocado = ultimoTocado === v.id;
+                          return (
+                            <Button
+                              key={v.id}
+                              type="button"
+                              size="md"
+                              variant={recienTocado ? "primario" : "secundario"}
+                              onClick={() => anadir(p, v)}
+                            >
+                              {recienTocado ? <CheckIcon size={13} /> : <MasIcon size={13} />}
+                              {recienTocado
+                                ? "Añadido"
+                                : `${v.etiqueta ? `${v.etiqueta} · ` : ""}${precioLegible(v.precioCents)}`}
+                            </Button>
+                          );
+                        })}
                       </div>
                     </div>
                   </li>
@@ -217,7 +245,7 @@ export function Carrito({
       </div>
 
       {/* ── El carrito ───────────────────────────────────────────────────── */}
-      <aside className="lg:sticky lg:top-28 lg:self-start">
+      <aside ref={resumenRef} className="lg:sticky lg:top-28 lg:self-start">
         <Card className="p-5">
           <h2 className="font-display text-xl text-espresso">Tu pedido</h2>
 
@@ -343,5 +371,39 @@ export function Carrito({
         </Card>
       </aside>
     </div>
+
+    {/*
+      Barra fija con el estado del pedido — SOLO en móvil.
+
+      Es la mitad importante del arreglo. En escritorio el resumen ya está a la
+      vista en la columna de al lado; en móvil vive al final de una carta de
+      treinta productos, así que sin esto no hay forma de saber que el toque
+      entró sin hacer scroll hasta abajo.
+
+      Va por encima de la barra de cuenta, que mide 4.5rem más el hueco de
+      gestos del iPhone.
+    */}
+    {lineas.length > 0 && fase.paso === "eligiendo" && (
+      <button
+        type="button"
+        onClick={() =>
+          resumenRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+        className={cn(
+          "fixed inset-x-0 z-40 mx-auto flex w-[calc(100%-2.5rem)] max-w-md items-center",
+          "justify-between gap-4 rounded-lg bg-espresso px-5 py-3.5 text-surface shadow-soft lg:hidden",
+          "bottom-[calc(4.5rem+env(safe-area-inset-bottom)+0.75rem)]"
+        )}
+      >
+        <span className="text-sm font-semibold">
+          {unidades} {unidades === 1 ? "producto" : "productos"}
+        </span>
+        <span className="font-display text-lg leading-none">{formatearDolares(total)}</span>
+        <span className="text-[0.65rem] font-semibold uppercase tracking-[0.12em]">
+          Ver pedido
+        </span>
+      </button>
+    )}
+    </>
   );
 }
