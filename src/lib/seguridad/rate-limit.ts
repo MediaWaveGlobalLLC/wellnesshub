@@ -22,7 +22,8 @@ export type Accion =
   | "password"
   | "admin_ajuste"
   | "admin_catalogo"
-  | "admin_operaciones";
+  | "admin_operaciones"
+  | "canje_recompensa";
 
 export type Veredicto = { permitido: true } | { permitido: false; reintentarEn: number };
 

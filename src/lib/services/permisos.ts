@@ -33,6 +33,9 @@ export type Permiso =
   | "ver_newsletter"
   | "ver_lealtad"
   | "configurar_lealtad"
+  | "ver_recompensas"
+  | "configurar_recompensas"
+  | "entregar_recompensa"
   | "aplicar_regla"
   | "ver_salud"
   | "gestionar_admins";
@@ -80,6 +83,15 @@ const MATRIZ: Record<Permiso, readonly Rol[]> = {
   */
   ver_lealtad: ["duena", "empleado"],
   configurar_lealtad: ["duena"],
+  /*
+    El catálogo de recompensas se parte igual que el de lealtad, y por la
+    misma razón: quién entrega es trabajo de barra, qué cuesta cada cosa es
+    decisión de negocio. El mostrador ve la cola y la despacha; no puede
+    inventar un premio ni bajarle el precio.
+  */
+  ver_recompensas: ["duena", "empleado"],
+  configurar_recompensas: ["duena"],
+  entregar_recompensa: ["duena", "empleado"],
   aplicar_regla: ["duena", "empleado"],
   // La salud técnica lleva identificadores de eventos de Stripe y quién está
   // bloqueado. No es información de barra.

@@ -18,9 +18,11 @@ import {
   editarEventoSchema,
   editarNivelSchema,
   editarReglaSchema,
+  entregarCanjeSchema,
   publicarEventoSchema,
   reactivarGiftCardSchema,
   recargaGiftCardSchema,
+  recompensaSchema,
   revocarAdminSchema,
   rotarCodigoSchema,
   slugDeEvento,
@@ -70,6 +72,15 @@ function traducir(mensaje: string): string {
     ["tarjeta_no_activa", "Solo se puede cambiar el código de una tarjeta activa."],
     ["hash_invalido", "El código no se generó correctamente. Vuelve a intentarlo."],
     ["last4_invalido", "El código no se generó correctamente. Vuelve a intentarlo."],
+    // Recompensas.
+    ["recompensa_no_encontrada", "Esa recompensa ya no existe."],
+    ["nombre_obligatorio", "El nombre es obligatorio."],
+    ["costo_excesivo", "Una recompensa no puede costar más de 100.000 puntos."],
+    ["costo_invalido", "El coste tiene que ser mayor que cero."],
+    ["existencias_invalidas", "Las existencias no pueden ser negativas."],
+    ["canje_no_encontrado", "Ese canje ya no existe."],
+    ["ya_entregada", "Ese canje ya se entregó."],
+    ["canje_cancelado", "Ese canje está cancelado."],
     ["tarjeta_anulada", "Esa tarjeta está anulada. Reactívala antes de recargarla."],
     ["tarjeta_caducada", "Esa tarjeta caducó: recargarla no la haría canjeable."],
     ["importe_excesivo", "Una sola recarga no puede superar $5.000."],
@@ -267,6 +278,78 @@ export async function recargarGiftCard(datos: unknown): Promise<Resultado> {
     ok: true,
     mensaje: `Recargada. La tarjeta tiene ahora ${formatearDolares(saldo)} y su código vuelve a servir.`,
   };
+}
+
+/* ── Recompensas ─────────────────────────────────────────────────────────── */
+
+/**
+ * Alta y edición del catálogo de recompensas.
+ *
+ * Poner precio a un premio es configurar el programa de lealtad, así que es de
+ * dueña, igual que editar las reglas y los niveles. La función SQL lo vuelve a
+ * comprobar.
+ */
+export async function guardarRecompensa(datos: unknown): Promise<Resultado> {
+  const parsed = recompensaSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(true);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  const { error } = await crearClienteServicio().rpc("admin_recompensa_guardar", {
+    p_actor_id: ctx.actor.id,
+    p_reward_id: parsed.data.rewardId ?? null,
+    p_nombre: parsed.data.nombre,
+    p_descripcion: parsed.data.descripcion,
+    p_costo_puntos: parsed.data.costoPuntos,
+    p_imagen_clave: parsed.data.imagenClave,
+    p_existencias: parsed.data.existencias,
+    p_orden: parsed.data.orden,
+    p_activa: parsed.data.activa,
+    p_reason: parsed.data.reason,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidatePath("/admin/recompensas");
+  // Lo que ve el cliente cambia en el momento.
+  revalidatePath("/puntos");
+
+  return {
+    ok: true,
+    mensaje: parsed.data.rewardId ? "Recompensa actualizada." : "Recompensa creada.",
+  };
+}
+
+/**
+ * Entregar en mostrador.
+ *
+ * Lo hace quien está delante de la persona, así que el empleado también puede.
+ * No devuelve puntos: entregar solo cierra el canje. Revertir uno es un ajuste
+ * de puntos aparte, con su propio motivo.
+ */
+export async function entregarCanje(datos: unknown): Promise<Resultado> {
+  const parsed = entregarCanjeSchema.safeParse(datos);
+  if (!parsed.success) return deZod(parsed.error);
+
+  const ctx = await preparar(false);
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  if (!actorPuede(ctx.actor, "entregar_recompensa")) {
+    return { ok: false, error: "No tienes permisos para esta operación." };
+  }
+
+  const { error } = await crearClienteServicio().rpc("admin_recompensa_entregar", {
+    p_actor_id: ctx.actor.id,
+    p_redemption_id: parsed.data.redemptionId,
+    p_request_id: ctx.requestId,
+  });
+
+  if (error) return { ok: false, error: traducir(error.message) };
+
+  revalidatePath("/admin/recompensas");
+  return { ok: true, mensaje: "Entregada." };
 }
 
 /* ── Eventos ─────────────────────────────────────────────────────────────── */

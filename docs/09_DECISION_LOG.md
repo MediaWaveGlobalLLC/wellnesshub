@@ -84,6 +84,26 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 - **Otras consecuencias:** `balance_cents` es `not null` y **sin default**, a propósito: un INSERT que se olvide de declarar el saldo falla en vez de crear una tarjeta vacía y canjeable. `gift_cards.status = 'redeemed'` pasa a leerse «sin saldo» y en el panel se muestra así.
 - **Aprobación:** el dueño del negocio, en sesión de 2026-07-31, sobre las tres decisiones de la tabla.
 
+### DEC-007 — La cuenta de cliente en móvil: barra inferior, puntos y recompensas
+
+- **Estado:** aprobada (decisión del dueño del negocio, sesión de 2026-07-31)
+- **Contexto:** el teléfono se sentía como la web en pequeño, y los puntos solo subían. `NAV_MOVIL` llevaba declarado en `src/lib/nav.ts` desde la Fase 5 sin que lo pintara nadie, y `loyalty_transactions` admitía el tipo `'redeem'` desde `0001` sin que ningún archivo de `src/` lo escribiera jamás: un programa de lealtad donde la recompensa no existía.
+- **Referencia:** `design-references/05-cuenta-movil-reference.png`.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Barra inferior | Inicio · Puntos · Tienda · **Wallet** · Perfil | La referencia no lleva Wallet; se añade porque ahí viven el crédito y las gift cards. Sustituye a la barra del mockup 02 |
+  | Cuándo se pinta | Solo con sesión y solo en móvil | Sin sesión, tres de cinco destinos rebotarían al login |
+  | Recompensas | Catálogo que la dueña gestiona; canje descuenta puntos y entrega un código | `configurar_recompensas` es de dueña; `entregar_recompensa` también del mostrador, porque despachar es trabajo de barra |
+  | Puntos y dinero | Siguen sin tocarse | DEC-005 y `docs/00`: los puntos no son monetarios. Un canje entrega producto, nunca crédito |
+  | Nombre y coste del canje | Congelados en la fila | Si mañana sube el precio, el canje de ayer siguió costando lo que costó |
+  | Fotos de recompensa | Clave del manifiesto de marca, nunca una URL | `docs/01` prohíbe imágenes remotas o inventadas. Sin foto, tarjeta tipográfica |
+
+- **Consecuencias:** la idempotencia del canje repite el patrón de `DEC-006` —clave `reward:<id>:<usuario>:<peticion>`, comprobada **antes** de descontar—, porque descontar primero restaría existencias sin que nadie recibiera nada.
+- **Desviaciones deliberadas de la referencia**, ambas por `docs/01`: sin emoji junto al saludo (DEC-003) y sin fotos para «Pastel o snack» ni «Experiencia», que no tienen asset aprobado y nacen sin imagen.
+- **Pendiente:** falta hacer pedidos y compras desde la cuenta (fase 3), con pago por Stripe y con saldo del wallet.
+
 ## Plantilla
 
 ```md
