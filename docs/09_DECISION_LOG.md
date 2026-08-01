@@ -185,6 +185,25 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
   - El Matcha Bar del flyer se solapa con la sección «Barra de Matcha» que ya estaba (Fresa Glow ≈ Strawberry, Mango Radiance ≈ Mango, Plátano Mellow ≈ Banana & Honey). Conviven a propósito: nombres, precio y descripción son los del flyer. Si se prefiere una sola, se archiva la otra desde el panel.
   - «¡Mas!» del Coffee Bar no se sembró como producto; queda como nota de la fila («Y más en barra»).
 
+### DEC-012 — El icono de la app es el isotipo, no el logotipo entero
+
+- **Estado:** aprobada (petición escrita del dueño, 2026-08-01: «ocupo q el favicon pongas el logo de siembra»)
+- **Contexto:** `src/app/favicon.ico` era el icono por defecto de Next.js. La marca no aparecía en ninguna pestaña, ni al guardar la web en la pantalla de inicio de un móvil.
+- **El conflicto:** `docs/11` dice **«no recortar logos»**, y el logotipo oficial mide 2483 × 1164 — 2,13 a 1. Un icono es cuadrado. Metido entero ahí, «SIEMBRA» ocuparía 32 × 15 píxeles: no sería el logo pequeño, sería una mancha marrón. Cumplir la regla al pie de la letra habría producido exactamente lo que la regla existe para evitar.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Qué se pinta | El **isotipo**: el sol con el grano de café | Es el elemento que la marca ya usa como sello, y es lo único que sobrevive a 32 píxeles |
+  | Cómo se recorta | Lo **mide** un script sobre el SVG rasterizado, no se escribe a ojo | Si el arte cambia, el encuadre cambia con él. Nadie vuelve a abrir un editor |
+  | De dónde sale | `public/brand/logos/logo-beige.svg`, el vector oficial | Ni un trazo redibujado: es reencuadre y cambio de color, ambos sobre el arte original |
+  | Colores | Grano oat `#FFD89E` sobre espresso `#45200A` | Pareja del Brand Book. Un cuadrado macizo se ve igual sobre una barra de pestañas clara que sobre una oscura, cosa que un fondo transparente no puede prometer |
+  | El de 16 px | Solo el **grano** | A ese tamaño los rayos miden menos de un píxel: no se ven finos, se ven como un borrón. Un `.ico` admite arte distinto por tamaño justamente para esto |
+  | Ficheros | `favicon.ico` (16/32/48), `icon.png` (512), `apple-icon.png` (180) | Next los enlaza solo por estar en `src/app/`. El de iOS va con fondo macizo y sin redondear: el sistema recorta las esquinas él |
+
+- **Alternativas consideradas:** meter el logotipo completo centrado en el cuadrado, sin recortar nada. Se descarta porque el resultado es ilegible a cualquier tamaño real de pestaña — respetaría la letra de `docs/11` y traicionaría su motivo, que es que el arte de marca se vea como debe verse.
+- **Consecuencias:** `docs/11` queda actualizado con la excepción y con el comando (`npm run icons`). Los iconos son **derivados versionados**: se commitean generados, pero nadie los edita a mano; se regeneran desde el SVG.
+
 ## Plantilla
 
 ```md

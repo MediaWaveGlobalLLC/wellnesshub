@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
+import { urlBaseDelSitio } from "@/lib/url-base";
 import {
   loginSchema,
   nuevaPasswordSchema,
@@ -39,14 +40,27 @@ const SIN_CONFIG: ResultadoAccion = {
   },
 };
 
-/** URL absoluta del sitio, para los enlaces de verificación y reset. */
+/**
+ * URL absoluta del sitio, para los enlaces de verificación y de reset.
+ *
+ * Comparte normalizador con el checkout de Stripe (`urlBaseDelSitio`) porque
+ * comparte el fallo. `NEXT_PUBLIC_APP_URL` se escribe a mano en Vercel y sale
+ * facilísimo sin esquema —«thewellnesshubpr.com»—, y entonces `emailRedirectTo`
+ * queda en `thewellnesshubpr.com/auth/callback`, que no es una URL absoluta.
+ *
+ * Supabase Auth no falla con eso: lo DESCARTA en silencio y manda el correo con
+ * la Site URL del proyecto, que de fábrica es `http://localhost:3000`. El
+ * resultado es el que se vio en producción — el enlace de verificación abría
+ * localhost y ahí se quedaba la gente, sin cuenta y sin nada que decirles.
+ *
+ * Ojo: esto es solo la mitad. Aunque la URL salga perfecta, Supabase la ignora
+ * igual si no está en la lista de Redirect URLs del proyecto. Ver `docs/13`.
+ */
 async function urlBase(): Promise<string> {
-  const configurada = process.env.NEXT_PUBLIC_APP_URL;
-  if (configurada) return configurada.replace(/\/$/, "");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
+  return urlBaseDelSitio(`${proto}://${host}`);
 }
 
 function deZod(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }): ResultadoAccion {

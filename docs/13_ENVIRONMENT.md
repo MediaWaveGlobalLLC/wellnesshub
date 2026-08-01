@@ -18,6 +18,38 @@ ADMIN_EMAIL_ALLOWLIST=
 - Vercel Preview y Production deben usar proyectos/keys separados cuando sea posible.
 - Stripe debe iniciar en test mode.
 - Rotar secretos si aparecen en logs, commits o screenshots.
+- **`NEXT_PUBLIC_APP_URL` va con esquema**: `https://thewellnesshubpr.com`, no
+  `thewellnesshubpr.com`. Sin esquema no es una URL absoluta y rompe dos cosas
+  distintas: Stripe la rechaza con `url_invalid` y Supabase Auth la descarta en
+  silencio. El código la normaliza (`src/lib/url-base.ts`), pero se escribe
+  bien de todas formas.
+
+## Supabase Auth — URL Configuration
+
+**No basta con el código.** Las server actions mandan `emailRedirectTo` y
+`redirectTo` apuntando a `/auth/callback`, pero Supabase solo respeta esa URL si
+además está en la lista blanca del proyecto. Si no está, **no da error**: manda
+el correo con la Site URL, que de fábrica es `http://localhost:3000`.
+
+Eso pasó en producción. El enlace de verificación abría localhost en el móvil de
+quien se registraba, la página no cargaba, y ahí se quedaban: sin cuenta
+verificada y sin ninguna pista de qué había fallado.
+
+En **Authentication → URL Configuration** del panel de Supabase:
+
+| Ajuste | Valor |
+|---|---|
+| Site URL | `https://thewellnesshubpr.com` |
+| Redirect URLs | `https://thewellnesshubpr.com/**` |
+| Redirect URLs (desarrollo) | `http://localhost:3000/**` |
+| Redirect URLs (previews de Vercel) | `https://*-mediawavegloballlc.vercel.app/**` |
+
+La Site URL es la que se usa cuando todo lo demás falla, así que es la que tiene
+que apuntar al dominio de verdad. Los `/**` son necesarios porque el reset de
+contraseña añade query string (`?siguiente=/recuperar/nueva`).
+
+Se comprueba de una sola forma fiable: registrando una cuenta con un correo real
+y mirando a dónde apunta el enlace del mensaje.
 
 ## Almacenamiento — bucket `avatares`
 
