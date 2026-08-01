@@ -16,6 +16,19 @@ import { crearBase, type Db } from "./supabase-harness";
  * La comprobación fuerte es la última: reconstruye el precio original a partir
  * de los centavos guardados y lo compara carácter a carácter con la cadena de
  * la que salió. Un solo dígito mal y este test falla.
+ *
+ * ALCANCE: las nueve secciones de `MENU`, no la tabla entera.
+ *
+ * `MENU` es el oráculo de la carta ORIGINAL, y desde `0023` la dueña puede
+ * añadir secciones desde el panel —y `0024` añade una, «Coffee Party»—. Exigir
+ * que la tabla no contenga nada más convertiría este test en una alarma que
+ * salta cada vez que alguien hace su trabajo, que es la manera más rápida de
+ * enseñarle a un equipo a ignorar un test rojo.
+ *
+ * Lo que sí sigue siendo intocable es que las nueve originales estén completas,
+ * en su orden relativo y con sus precios al centavo. Eso es lo que se comprueba.
+ * Las dos reglas que sí valen para TODO el catálogo —slug derivado del nombre y
+ * slug sin repetir— se comprueban sobre la tabla entera, más abajo.
  */
 describe("catálogo vs. carta oficial", () => {
   let db: Db;
@@ -42,20 +55,23 @@ describe("catálogo vs. carta oficial", () => {
     precios: string; // centavos concatenados por orden, p.ej. "425,475"
   };
 
+  /** Solo las nueve de la carta original, en su orden. */
   let categorias: FilaCategoria[];
   let productos: FilaProducto[];
+  /** El catálogo entero, para las reglas que no admiten excepción. */
+  let todosLosProductos: FilaProducto[];
 
   beforeAll(async () => {
     db = await crearBase();
 
-    categorias = (
+    const todasLasCategorias = (
       await db.query<FilaCategoria>(
         "select slug, nombre_es, nombre_en, mundo, estado, etiqueta_tamanos, orden" +
           " from public.menu_categorias order by orden"
       )
     ).rows;
 
-    productos = (
+    todosLosProductos = (
       await db.query<FilaProducto>(
         `select c.slug as categoria_slug, p.slug, p.nombre, p.nota_es, p.nota_en,
                 p.destacado, p.es_modificador, p.orden,
@@ -66,13 +82,19 @@ describe("catálogo vs. carta oficial", () => {
           order by c.orden, p.orden`
       )
     ).rows;
+
+    // Filtrar conserva el orden relativo, así que las comparaciones por
+    // posición de abajo siguen valiendo tal cual estaban escritas.
+    const deLaCarta = new Set(MENU.map((s) => s.id));
+    categorias = todasLasCategorias.filter((c) => deLaCarta.has(c.slug));
+    productos = todosLosProductos.filter((p) => deLaCarta.has(p.categoria_slug));
   });
 
   afterAll(async () => {
     await db.close();
   });
 
-  it("tiene las mismas secciones, en el mismo orden", () => {
+  it("conserva las secciones de la carta oficial, en el mismo orden", () => {
     expect(categorias.map((c) => c.slug)).toEqual(MENU.map((s) => s.id));
   });
 
@@ -88,7 +110,7 @@ describe("catálogo vs. carta oficial", () => {
     }
   });
 
-  it("no sobra ni falta ningún producto", () => {
+  it("no sobra ni falta ningún producto de la carta oficial", () => {
     const esperados = MENU.flatMap((s) => s.items.map((i) => `${s.id}/${i.nombre}`));
     const reales = productos.map((p) => `${p.categoria_slug}/${p.nombre}`);
     expect(reales).toEqual(esperados);
@@ -147,8 +169,12 @@ describe("catálogo vs. carta oficial", () => {
       silencio: la fila seguiría ahí y el producto no aparecería nunca.
 
       Por eso el slug no se inventa: se deriva del nombre con la misma función.
+
+      Sobre el catálogo ENTERO: la regla no es de la carta de 2024, es del
+      modelo. Una sección nueva que se saltara esto dejaría huérfano cualquier
+      favorito de sus productos igual de silenciosamente.
     */
-    for (const p of productos) {
+    for (const p of todosLosProductos) {
       expect(p.slug, `slug de "${p.nombre}"`).toBe(slugDeItem(p.nombre));
     }
   });
@@ -156,7 +182,9 @@ describe("catálogo vs. carta oficial", () => {
   it("no hay dos productos con el mismo slug", () => {
     // `slugDeItem` puede colisionar si dos secciones repiten nombre, y la
     // columna es unique: la migración fallaría al aplicarse. Mejor verlo aquí.
-    const slugs = productos.map((p) => p.slug);
+    // También sobre el catálogo entero, y por eso mismo: una sección nueva que
+    // repitiera un nombre ya usado reventaría al aplicar su propia migración.
+    const slugs = todosLosProductos.map((p) => p.slug);
     expect(new Set(slugs).size, "hay slugs repetidos").toBe(slugs.length);
   });
 

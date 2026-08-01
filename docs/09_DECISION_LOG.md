@@ -159,6 +159,32 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 - **Alternativas consideradas:** dejar el rótulo «Agotado» y enseñar a usar «Retirar». Se descarta porque obliga a distinguir dos conceptos para una sola intención, y porque el interruptor que ya se usó 41 veces debe hacer lo que parece que hace.
 - **Consecuencias:** con los datos del 1 de agosto de 2026 la carta pasa a enseñar **un solo producto** (Matcha Clásico); volver a encender el resto es decisión de negocio y se avisa por escrito. Se pierde la forma de anunciar «hoy no hay matcha» sin quitarlo de la carta: si hiciera falta, será un estado propio y no un efecto lateral de la disponibilidad.
 
+### DEC-011 — «Coffee Party»: la carta del soft opening entra como sección propia
+
+- **Estado:** aprobada (petición escrita del dueño, 2026-08-01: «quiero agregar al menu este pero la seccion de este menu se llamara Coffee Party usa los nombres precios y especificciones que vez en el menu», con el flyer adjunto)
+- **Contexto:** el flyer oficial del soft opening («SOFT OPENING PRESENTS — Coffee Party») lista once filas con precios propios. El flyer viñetea casi todas, pero las viñetas **no significan lo mismo** en cada fila, y esa es toda la decisión de modelado.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Vehículo | Migración `0024`, no el panel | Son 11 productos y 15 variantes de una tirada: a mano son ~40 formularios y ningún sitio donde revisar antes de que salga a la carta pública. Aquí queda versionado y con una prueba que reconstruye cada precio contra el flyer |
+  | Viñetas que **describen** (Rolls, Dupleta) | `nota_es`/`nota_en` | Los tres rolls del trío vienen los tres; no hay nada que elegir |
+  | Viñetas que **eligen** al mismo precio (Donas, Coffee Bar) | Variantes etiquetadas | En `/pedir` cada variante es un botón —«Nutella · 4.75»—, que es literalmente la forma de pedir un sabor |
+  | Matcha Bar | **Cinco productos**, no cinco variantes | Cada bebida trae ingredientes distintos y una variante solo lleva etiqueta y precio: no tiene dónde guardar «cold foam, matcha, oat milk, puré de fresa» |
+  | Nombres del Matcha Bar | «Matcha Vanilla», no «Vanilla» | En el flyer la palabra la pone la cabecera de encima. En un carrito no hay cabecera: la línea diría «Vanilla», y en la comanda eso no es una bebida, es un adjetivo |
+  | Posición | `orden = 0` | Cabe delante sin renumerar las nueve que ya estaban. Y va delante porque es el evento que está pasando: bajo «Para Llevar (pronto)» no la vería quien viene al soft opening |
+  | `precioDeCarta` | Deja de repetir el mismo precio | Con variantes de sabor la carta anunciaba «4.75 / 4.75 / 4.75», que se lee como catorce dólares. Ningún producto de la carta original tiene dos tamaños al mismo precio, así que no cambia nada de lo anterior |
+  | Fotos | Ninguna | El flyer trae fotos pero no están en `public/brand/originals/`. `docs/11`: el asset que falta se lista y se para. Se asignan desde el panel (botón FOTO) en cuanto entren |
+  | `catalogo-fidelidad` | Pasa a validar **las nueve secciones de `MENU`**, no la tabla entera | Desde `0023` la dueña añade secciones desde el panel. Exigir que no haya nada más convierte el test en una alarma que salta cada vez que alguien hace su trabajo — la forma más rápida de enseñar a ignorar un test rojo. Las dos reglas que sí son del modelo (slug derivado del nombre, slug sin repetir) siguen comprobándose sobre **todo** el catálogo |
+
+- **Alternativas consideradas:** sembrar «Espresso», «Iced Latte» y «Cortadito» como productos sueltos del Coffee Bar. Descartado: `menu_productos.slug` es único global y `espresso` e `iced-latte` **ya existen** en la carta base a $2.75 y $7.25. Habrían sido dos productos casi iguales con precios muy distintos, y el segundo con nombre retorcido para esquivar la colisión. Una sola fila «Coffee Bar» con las tres opciones dentro dice lo mismo que el flyer y no ensucia el catálogo.
+- **Relación con DEC-010:** los once productos nacen **disponibles**, así que la carta pública deja de enseñar un solo producto. No es el arreglo de DEC-010 —volver a encender el resto sigue siendo decisión de negocio— pero sí significa que `/menu` vuelve a tener algo que enseñar sin que nadie toque un interruptor.
+- **Consecuencias / a confirmar con la dueña:**
+  - El Coffee Bar queda a **$8.95 c/u** tal y como está impreso, incluido el espresso, que en la carta base son $2.75. Es precio de evento; si es una errata del flyer se corrige desde el panel sin desplegar.
+  - El flyer rotula «Pan dulce» también bajo la Dupleta, debajo de las empanadas. Se ha dejado **solo** en los Rolls por parecer un arrastre de maquetación; si es intencionado, se añade desde el panel.
+  - El Matcha Bar del flyer se solapa con la sección «Barra de Matcha» que ya estaba (Fresa Glow ≈ Strawberry, Mango Radiance ≈ Mango, Plátano Mellow ≈ Banana & Honey). Conviven a propósito: nombres, precio y descripción son los del flyer. Si se prefiere una sola, se archiva la otra desde el panel.
+  - «¡Mas!» del Coffee Bar no se sembró como producto; queda como nota de la fila («Y más en barra»).
+
 ## Plantilla
 
 ```md
