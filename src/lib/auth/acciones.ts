@@ -129,13 +129,30 @@ export async function registrarse(datos: unknown): Promise<ResultadoAccion> {
   });
 
   if (error) {
-    // No se revela si el correo ya existe: eso permitiría enumerar usuarios.
+    /*
+      El motivo REAL va a los logs del servidor, nunca a la pantalla.
+
+      Sin esto, un registro que falla no deja rastro en ningún sitio: la persona
+      ve «revisa los datos», el equipo no puede hacer nada y no hay forma de
+      saber si fue el correo, la contraseña, la cuota de correos de Supabase o
+      el propio servicio caído. Pasó — «no deja registrar, lo intenté dos veces»
+      y no había un solo renglón que mirar.
+
+      El correo NO se registra: bastaría el log para reconstruir quién intentó
+      darse de alta y cuándo. Con el código y el mensaje de Supabase sobra para
+      distinguir «ya existe» de «servicio caído».
+    */
+    console.error("[registro] signUp falló:", error.code ?? error.name, error.message);
+
+    // A la persona no se le dice si el correo ya existe: eso permitiría
+    // enumerar usuarios. Pero sí se le apunta a la salida, porque «ya tengo
+    // cuenta» es de lejos el motivo más frecuente y no se le ocurre solo.
     return {
       ok: false,
       error: {
         code: "registro_fallido",
         message:
-          "No pudimos crear la cuenta ahora mismo. Revisa los datos e inténtalo de nuevo.",
+          "No pudimos crear la cuenta ahora mismo. Si ya tienes una con ese correo, inicia sesión o recupera tu contraseña.",
       },
     };
   }

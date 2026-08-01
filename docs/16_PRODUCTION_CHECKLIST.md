@@ -17,7 +17,8 @@ Estado a 30 de julio de 2026, cierre de la Fase 8.
 | 1.3 | `ADMIN_EMAIL_ALLOWLIST` en Vercel, con los correos que de verdad deben entrar a `/admin`. | Dueño | ⛔ Pendiente |
 | 1.4 | `GIFT_CARD_PEPPER` de producción: 32 bytes aleatorios, **distinto** del de desarrollo. Si cambia después de emitir tarjetas, ninguna se podrá canjear. | Dueño | ⛔ Pendiente |
 | 1.5 | Claves de Stripe (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) y endpoint del webhook apuntando al dominio real. | Dueño | ⛔ Pendiente |
-| 1.6 | `RESEND_API_KEY` y dominio verificado en Resend. Sin esto no salen ni la confirmación de cuenta ni el correo de la gift card. | Dueño | ⛔ Pendiente |
+| 1.6 | `RESEND_API_KEY` y dominio verificado en Resend. Sin esto no sale el correo de la gift card. **Esto NO cubre la confirmación de cuenta** — ver 1.6b. | Dueño | ⛔ Pendiente |
+| 1.6b | **SMTP propio en Supabase.** El correo de verificación de cuenta lo manda Supabase Auth, no Resend: `src/lib/email/enviar.ts` solo se usa para las gift cards. Con el SMTP de fábrica, Supabase manda **muy pocos correos por hora** y a partir de ahí **el registro empieza a fallar sin decir por qué**. Es exactamente lo que pasa después de una tarde probando altas. Se conecta en Supabase → Project Settings → Authentication → SMTP Settings, con las credenciales SMTP de Resend y el mismo remitente de `RESEND_FROM_EMAIL`. | Dueño | ⛔ Pendiente |
 | 1.7 | **Revisión legal** de `/terminos` y `/privacidad`. El texto describe con exactitud lo que el sistema hace, pero no lo ha revisado un abogado. | Dueño | ⛔ Pendiente |
 | 1.8 | Correo de contacto legal. Hoy la política remite a teléfono, Instagram y local, porque no había buzón y no se inventó uno. Cuando exista, añadirlo a `SITE`. | Dueño | ⛔ Pendiente |
 | 1.9 | Aplicar la migración `0010_rate_limits.sql` en producción. Hasta entonces el límite de intentos falla abierto: no bloquea a nadie. | Dueño / equipo | ⛔ Pendiente |

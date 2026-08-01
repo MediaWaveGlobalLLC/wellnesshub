@@ -92,6 +92,17 @@ export function ColaPedidos({ pedidos }: { pedidos: PedidoEnCola[] }) {
                       {p.numero}
                       <span className="ml-3 text-sm font-normal text-text-muted">
                         {formatearDolares(p.totalCents)}
+                        {/*
+                          La propina se dice aparte y solo cuando la hay. Metida
+                          dentro del total sería invisible, y una propina que
+                          nadie ve es una propina que nadie reparte.
+                        */}
+                        {p.propinaCents > 0 && (
+                          <span className="text-terracota">
+                            {" "}
+                            (incl. {formatearDolares(p.propinaCents)} de propina)
+                          </span>
+                        )}
                         {p.metodoPago && ` · ${METODO[p.metodoPago] ?? p.metodoPago}`}
                         {p.pagado && ` · ${hora(p.pagado)}`}
                       </span>

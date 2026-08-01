@@ -158,4 +158,29 @@ describe("consumir_rate_limit", () => {
     );
     expect(filas[0]!.permitido).toBe(true);
   });
+
+  describe("registro en el local — 0027", () => {
+    /*
+      El límite de registro se comparte por IP, y en un café todo el mundo sale
+      por la misma: la del WiFi. Con el umbral de `0010` —5 en una hora— la sexta
+      persona que se apuntaba en la barra se encontraba bloqueada sin haber
+      intentado nada.
+    */
+    it("deja apuntarse a veinte personas desde la misma IP", async () => {
+      const hash = clave("ip-wifi-local");
+      for (let i = 1; i <= 20; i++) {
+        expect((await consumir("registro", hash)).permitido, `alta número ${i}`).toBe(true);
+      }
+      // Y sigue habiendo tope: sin él, un script deja el dominio del proyecto
+      // quemado por spam y entonces no llega el correo de verificación de nadie.
+      expect((await consumir("registro", hash)).permitido).toBe(false);
+    });
+
+    it("sigue siendo más alto que el de login, que es por IP + correo", () => {
+      // Comparación de umbrales, no de contadores: login identifica a la persona
+      // por su correo, así que puede permitirse ser más estricto.
+      expect(20).toBeGreaterThan(8);
+    });
+  });
 });
+

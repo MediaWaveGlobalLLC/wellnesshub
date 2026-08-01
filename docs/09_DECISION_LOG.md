@@ -223,6 +223,46 @@ Toda desviación del contrato debe documentarse aquí antes de implementarse.
 - **Consecuencias:** las pruebas de `recarga-saldo` que garantizaban que el café se daba ahora garantizan lo contrario, y se añade una que emite un canje viejo y comprueba que sigue vivo y pendiente después de una recarga nueva. Si esa se pone en rojo, alguien está a punto de invalidar cafés de gente real.
 - **Pendiente de la dueña:** decidir el texto definitivo de la barra de la portada, y qué hacer con los cafés pendientes que queden sin canjear (`select count(*) from loyalty_redemptions where origen = 'promocion' and estado = 'pendiente'`).
 
+### DEC-014 — Propina en los pedidos por la web
+
+- **Estado:** aprobada (petición del cliente, 2026-08-01: «algo que me falto al final de todo que si quieren dejar propina les salga una opcion»)
+- **Contexto:** en el mostrador la propina la deja quien quiere. Por la app no había manera: se pagaba el pedido y ya.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Columnas | `subtotal_cents` **y** `propina_cents`, con `total_cents = subtotal + propina` | `total_cents` es lo que ya leen `pagar_pedido_con_saldo` y el Checkout de Stripe como importe único. Metiendo ahí la propina, ambos cobran bien **sin tocar una línea**, que es lo que se quiere de un cambio que mueve dinero |
+  | Base de los puntos | `subtotal_cents`, no `total_cents` | Dar puntos por la propina es pagarle a alguien por ser generoso con otra persona. Los puntos son por lo que compras |
+  | Pedidos anteriores | `subtotal_cents` se rellena con `total_cents` | Es exacto: no tenían propina que separar. Y así dan los mismos puntos que daban |
+  | Quién pone el importe | El navegador — **excepción consciente a `CLAUDE.md` §5** | Es el único número del pedido sin precio en el catálogo: es una decisión de quien paga sobre su propio dinero. Los precios de las líneas los sigue calculando `crear_pedido` desde `menu_variantes` |
+  | Tope | $100, validado en `zod` **y** en SQL | Un teclado móvil convierte «2.00» en 200000 con una pulsación despistada. El doble control no es desconfianza del formulario: la server action es una API y quien llame por su cuenta se salta el `zod` entero |
+  | Qué guarda el carrito | El **porcentaje**, no los centavos | Así la propina sigue al subtotal cuando alguien añade otro café después de elegirla. Guardando centavos, un 15 % de $8.95 se quedaría congelado en $1.34 aunque el pedido acabara en $30 |
+  | Opción por defecto | **«Sin propina»**, seleccionada de salida | La propina se ofrece, no se da por supuesta. Un 15 % preseleccionado cobra de más a quien no lea |
+  | Reenvío del mismo intento | Devuelve la propina de **entonces** | El identificador de intento es la petición, no el carrito. La misma petición no puede acabar cobrando otra cosa |
+  | Cola del panel | Enseña la propina aparte del total | Una propina que nadie ve es una propina que nadie reparte |
+  | `crear_pedido` | **DROP** y crear de nuevo, no `create or replace` | Cambia el tipo de retorno, y además añadir un argumento crea una **sobrecarga**: la firma de tres argumentos seguiría viva y escribiría `total_cents` sin tocar `subtotal_cents`. El pedido se cobraría bien y no daría ni un punto, en silencio (misma trampa que DEC-009) |
+
+- **Consecuencias:** ocho pruebas nuevas en `pedidos.test.ts`. La que más importa es la de los puntos: comprueba que un pedido de $12.50 con $2.00 de propina da 12 puntos y no 14.
+- **Fuera de alcance:** repartir la propina entre el equipo. El panel la enseña por pedido; a quién le toca cada dólar es una decisión del local, no del software.
+
+### DEC-015 — El límite de registro estaba pensado para un atacante, no para un café
+
+- **Estado:** aprobada (incidencia del cliente, 2026-08-01: «ahora algo ocurre que no deja registrar, traté dos veces y no dejó»)
+- **Contexto:** `0010` fijó «cuentas nuevas por IP: 5 en 1 hora». Contra alguien creando cuentas en masa desde su casa es razonable. Dentro del local no, porque **todo el mundo conectado al WiFi de SIEMBRA sale por la misma IP**: el límite real no era «5 por persona» sino «5 por hora en todo el local». La sexta persona que se apunta en la barra ve «demasiados intentos, vuelve en 47 minutos» sin haber intentado nada.
+- **Agravante:** el contador se incrementa **antes** de hablar con Supabase, así que cada intento fallido —un correo ya registrado, una contraseña corta— gasta turno igual.
+- **Decisión:**
+
+  | Punto | Decisión | Por qué |
+  |---|---|---|
+  | Umbral | 5 → **20 por hora y por IP** | Sigue frenando el abuso automatizado, que es a lo que apunta la regla, y deja de frenar una fila de gente real |
+  | Quitarlo del todo | **No** | Cada alta manda un correo desde Supabase. Sin límite, un script deja el dominio del proyecto quemado por spam en una tarde, y entonces no llega el correo de verificación de nadie |
+  | Contadores en curso | Se borran en la propia migración | Sin eso, quien se quedó bloqueado con la regla vieja sigue bloqueado hasta que cierre su ventana: se arreglaría para mañana y no para la persona que lo tiene delante |
+  | Error de `signUp` | Se registra en los logs del servidor | Un registro que fallaba no dejaba rastro en NINGÚN sitio: la persona veía «revisa los datos» y no había un renglón que mirar para saber si fue el correo, la contraseña, la cuota de Supabase o el servicio caído |
+  | Qué se registra | Código y mensaje de Supabase, **nunca el correo** | Bastaría el log para reconstruir quién intentó darse de alta y cuándo. Con el código sobra para distinguir «ya existe» de «servicio caído» |
+  | Mensaje en pantalla | Añade «si ya tienes una con ese correo, inicia sesión o recupera tu contraseña» | Sigue sin confirmar si el correo existe —eso permitiría enumerar usuarios—, pero apunta a la salida: «ya tengo cuenta» es de lejos el motivo más frecuente y no se le ocurre a nadie solo |
+
+- **Consecuencias:** una prueba comprueba que veinte altas seguidas desde la misma IP pasan y la veintiuna no. **Desbloqueo inmediato sin desplegar:** `delete from public.rate_limit_hits where accion = 'registro';`
+
 ## Plantilla
 
 ```md

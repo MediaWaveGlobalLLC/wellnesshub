@@ -26,6 +26,21 @@ import { cn } from "@/lib/cn";
  * costando lo que cuesta.
  */
 
+/*
+  Los porcentajes que se ofrecen.
+
+  Cuatro botones y uno de cantidad libre. El primero es «Sin propina» y va
+  seleccionado de salida: la propina se ofrece, no se da por supuesta, y un
+  preseleccionado del 15% cobra de más a quien no lea.
+*/
+const PROPINAS: { pct: number | null; etiqueta: string }[] = [
+  { pct: 0, etiqueta: "Sin propina" },
+  { pct: 10, etiqueta: "10%" },
+  { pct: 15, etiqueta: "15%" },
+  { pct: 20, etiqueta: "20%" },
+  { pct: null, etiqueta: "Otra" },
+];
+
 type Fase =
   | { paso: "eligiendo" }
   | { paso: "pagando"; orderId: string; orderNumber: string; totalCents: number }
@@ -80,12 +95,46 @@ export function Carrito({
     [lineas]
   );
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => lineas.reduce((s, l) => s + l.precioCents * l.cantidad, 0),
     [lineas]
   );
 
+  /*
+    Propina — `0026_propina.sql`.
+
+    Se guarda el PORCENTAJE elegido, no los centavos, para que la propina siga
+    al subtotal cuando alguien añade otro café después de haberla elegido. Si se
+    guardaran los centavos, un 15% de $8.95 se quedaría congelado en $1.34
+    aunque el pedido acabara en $30.
+
+    `null` es «cantidad a mano»: entonces manda `propinaManual`.
+  */
+  const [propinaPct, setPropinaPct] = useState<number | null>(0);
+  const [propinaManual, setPropinaManual] = useState(0);
+  const [propinaTexto, setPropinaTexto] = useState("");
+
+  const propina = useMemo(() => {
+    if (propinaPct === null) return propinaManual;
+    // Al centavo más cercano. El servidor cobra ESTE número, no el porcentaje.
+    return Math.round((subtotal * propinaPct) / 100);
+  }, [propinaPct, propinaManual, subtotal]);
+
+  const total = subtotal + propina;
+
   const alcanzaElSaldo = total > 0 && saldoCents >= total;
+
+  /** Tope de $100, el mismo que la acción y el mismo que SQL. */
+  function fijarPropinaManual(texto: string) {
+    setPropinaTexto(texto);
+    // Coma o punto: en Puerto Rico se escriben las dos.
+    const dolares = Number.parseFloat(texto.replace(",", "."));
+    if (!Number.isFinite(dolares) || dolares < 0) {
+      setPropinaManual(0);
+      return;
+    }
+    setPropinaManual(Math.min(10000, Math.round(dolares * 100)));
+  }
 
   function anadir(
     producto: { id: string; nombre: string },
@@ -135,6 +184,7 @@ export function Carrito({
       const r = await crearPedido({
         items: lineas.map((l) => ({ varianteId: l.varianteId, cantidad: l.cantidad })),
         clientRequestId: idIntento,
+        propinaCents: propina,
       });
 
       if (!r.ok) {
@@ -329,14 +379,77 @@ export function Carrito({
           )}
 
           {lineas.length > 0 && (
-            <p className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
-              <span className="text-sm font-semibold uppercase tracking-[0.1em] text-text-muted">
-                Total
-              </span>
-              <span className="font-display text-2xl text-espresso">
-                {formatearDolares(total)}
-              </span>
-            </p>
+            <>
+              <p className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
+                <span className="text-sm text-text-muted">Subtotal</span>
+                <span className="text-sm text-espresso">{formatearDolares(subtotal)}</span>
+              </p>
+
+              {/*
+                Propina. Solo mientras se elige: una vez creado el pedido el
+                importe ya está cerrado en la fila y cambiar los botones aquí
+                daría a entender que todavía se puede tocar.
+              */}
+              {fase.paso === "eligiendo" && (
+                <div className="mt-3">
+                  <p className="text-sm text-text-muted">¿Dejas propina?</p>
+
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {PROPINAS.map((p) => (
+                      <button
+                        key={p.pct ?? "otra"}
+                        type="button"
+                        onClick={() => {
+                          setPropinaPct(p.pct);
+                          if (p.pct !== null) setPropinaTexto("");
+                        }}
+                        aria-pressed={propinaPct === p.pct}
+                        className={cn(
+                          "rounded-sm border px-2.5 py-1.5 text-xs font-semibold transition-colors",
+                          propinaPct === p.pct
+                            ? "border-terracota bg-surface-muted text-terracota"
+                            : "border-border text-text-muted hover:border-terracota/50"
+                        )}
+                      >
+                        {p.etiqueta}
+                      </button>
+                    ))}
+                  </div>
+
+                  {propinaPct === null && (
+                    <label className="mt-2 flex items-center gap-2 text-sm text-text-muted">
+                      <span>$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={propinaTexto}
+                        onChange={(e) => fijarPropinaManual(e.target.value)}
+                        placeholder="0.00"
+                        aria-label="Propina en dólares"
+                        className="w-24 rounded-sm border border-border bg-surface px-2 py-1 text-espresso"
+                      />
+                      <span className="text-xs">Máximo $100</span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {propina > 0 && (
+                <p className="mt-3 flex items-baseline justify-between">
+                  <span className="text-sm text-text-muted">Propina</span>
+                  <span className="text-sm text-espresso">{formatearDolares(propina)}</span>
+                </p>
+              )}
+
+              <p className="mt-3 flex items-baseline justify-between border-t border-border pt-3">
+                <span className="text-sm font-semibold uppercase tracking-[0.1em] text-text-muted">
+                  Total
+                </span>
+                <span className="font-display text-2xl text-espresso">
+                  {formatearDolares(total)}
+                </span>
+              </p>
+            </>
           )}
 
           {error && (
