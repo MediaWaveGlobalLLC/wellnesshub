@@ -37,12 +37,23 @@ export function FilaProducto({
   producto,
   puedeEditar,
   fotos,
+  mover,
 }: {
   producto: ProductoCatalogo;
   /** Falso para un empleado: solo verá el botón de agotado. */
   puedeEditar: boolean;
   /** Claves elegibles del manifiesto de marca. Nunca URLs libres. */
   fotos: { clave: string; src: string }[];
+  /**
+   * Flechas de orden. Las gestiona el padre porque reordenar necesita la lista
+   * completa de hermanos, no solo esta fila.
+   */
+  mover?: {
+    puedeSubir: boolean;
+    puedeBajar: boolean;
+    subir: () => void;
+    bajar: () => void;
+  };
 }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
@@ -131,6 +142,29 @@ export function FilaProducto({
 
           {/* Agotado: un clic, con motivo de lista. Lo puede hacer el mostrador. */}
           <AccionAgotado producto={producto} onEjecutar={ejecutar} pendiente={pendiente} />
+
+          {mover && (
+            <span className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={mover.subir}
+                disabled={!mover.puedeSubir || pendiente}
+                aria-label={`Subir ${producto.nombre}`}
+                className="flex h-7 w-7 items-center justify-center rounded-sm border border-border text-espresso transition-colors hover:border-terracota disabled:opacity-30"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                onClick={mover.bajar}
+                disabled={!mover.puedeBajar || pendiente}
+                aria-label={`Bajar ${producto.nombre}`}
+                className="flex h-7 w-7 items-center justify-center rounded-sm border border-border text-espresso transition-colors hover:border-terracota disabled:opacity-30"
+              >
+                ↓
+              </button>
+            </span>
+          )}
 
           {puedeEditar && (
             <>

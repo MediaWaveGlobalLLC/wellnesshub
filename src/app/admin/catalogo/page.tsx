@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { Alert, Badge, Card } from "@/components/ui/Surface";
+import { Alert, Card } from "@/components/ui/Surface";
 import { EmptyState } from "@/components/states";
 import { FilaProducto } from "@/components/admin/catalogo/FilaProducto";
+import { GestionCategoria, NuevaCategoria } from "@/components/admin/catalogo/GestionCategoria";
 import { actorPuede, exigirAdmin } from "@/lib/services/admin-service";
 import { obtenerCatalogoAdmin } from "@/lib/catalogo/service";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
@@ -66,32 +67,16 @@ export default async function CatalogoPage() {
         </p>
       </Alert>
 
+      {puedeEditar && <NuevaCategoria />}
+
       <div className="mt-6 space-y-5">
         {activos.map((c) => (
-          <Card key={c.id} className="p-5 sm:p-6">
-            <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
-              <h2 className="font-display text-xl text-espresso">{c.nombre}</h2>
-              <div className="flex items-center gap-2">
-                {c.etiquetaTamanos && (
-                  <span className="text-xs uppercase tracking-wider text-text-muted">
-                    {c.etiquetaTamanos}
-                  </span>
-                )}
-                <Badge tono={c.estado === "hoy" ? "exito" : "aviso"}>
-                  {c.estado === "hoy" ? "En carta" : "Próximamente"}
-                </Badge>
-              </div>
-            </div>
-
-            <ul className="mt-1">
-              {c.productos
-                .filter((p) => !p.archivado)
-                .map((p) => (
-                  <FilaProducto key={p.id} producto={p} puedeEditar={puedeEditar}
-                fotos={fotos} />
-                ))}
-            </ul>
-          </Card>
+          <GestionCategoria
+            key={c.id}
+            categoria={c}
+            puedeEditar={puedeEditar}
+            fotos={fotos}
+          />
         ))}
       </div>
 
