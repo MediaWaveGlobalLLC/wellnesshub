@@ -313,8 +313,16 @@ export const CLUB_BENEFICIOS = [
   },
 ];
 
-/* Oferta real del club — flyer oficial del menú */
+/*
+  Oferta que anuncia la barra superior de la home.
+
+  ATENCIÓN A QUIEN VENGA DETRÁS: esto YA NO SALE DEL FLYER. El flyer oficial del
+  menú decía «Café gratis 1 vez al mes o 10% de descuento», y la dueña lo cambió
+  a la promoción de bienvenida el 30 de julio de 2026. No es una desviación del
+  material contractual que haya que «restaurar»: es una decisión de negocio
+  posterior, y volver al texto del flyer sería anunciar una oferta retirada.
+*/
 export const CLUB_OFERTA = {
-  es: "Café gratis 1 vez al mes o 10% de descuento",
-  en: "Free coffee once a month or 10% off",
+  es: "Deposita tus primeros $20 y recibe café gratis",
+  en: "Deposit your first $20 and get a free coffee",
 };
