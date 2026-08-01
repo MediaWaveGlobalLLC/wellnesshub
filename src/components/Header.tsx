@@ -10,7 +10,55 @@ import { SITE, CLUB_OFERTA } from "@/lib/site";
 import { NAV_PRINCIPAL } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { BagIcon, UserIcon } from "@/components/icons";
+import { crearClienteNavegador } from "@/lib/supabase/client";
+import { supabaseConfigurado } from "@/lib/supabase/env";
 import { cn } from "@/lib/cn";
+
+/**
+ * ¿Hay sesión abierta?
+ *
+ * Se resuelve en el navegador y NO en el layout raíz, a propósito: leer la
+ * sesión ahí obligaría a renderizar dinámicamente todas las páginas, y hoy
+ * `/menu`, `/nosotros` o `/visitanos` se sirven estáticas.
+ *
+ * Devuelve `null` mientras no se sabe. Quien lo consume trata ese estado como
+ * «sin sesión»: es preferible enseñar «Iniciar sesión» un instante de más que
+ * dejar la cabecera sin ninguna puerta a la cuenta, que es justo el fallo que
+ * esto viene a arreglar.
+ */
+function useSesion(): boolean | null {
+  /*
+    La web pública tiene que funcionar aunque Supabase no esté configurado
+    (`src/lib/supabase/env.ts`); sin esa guarda el header reventaría entero. Se
+    resuelve en el inicializador y no dentro del efecto porque `supabaseConfigurado()`
+    lee variables que Next incrusta al compilar: el valor es el mismo en
+    servidor y en cliente, así que no hay ni parpadeo ni desajuste de hidratación.
+  */
+  const [hay, setHay] = useState<boolean | null>(() => (supabaseConfigurado() ? null : false));
+
+  useEffect(() => {
+    if (!supabaseConfigurado()) return;
+
+    const supabase = crearClienteNavegador();
+    let vivo = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (vivo) setHay(Boolean(data.user));
+    });
+
+    // Entrar o salir tiene que repintar el menú sin recargar la página.
+    const { data: sub } = supabase.auth.onAuthStateChange((_evento, sesion) => {
+      if (vivo) setHay(Boolean(sesion));
+    });
+
+    return () => {
+      vivo = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  return hay;
+}
 
 /**
  * Header canónico — DEC-005 / plan D6.
@@ -33,6 +81,23 @@ export function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const sesion = useSesion();
+  const conSesion = sesion === true;
+
+  /*
+    Adónde lleva la cuenta. Con sesión, al perfil; sin ella, al login. Hasta
+    ahora apuntaba siempre al login, incluso con la sesión abierta: quien ya
+    había entrado acababa en una pantalla de acceso.
+  */
+  const cuentaHref = conSesion ? "/perfil" : "/iniciar-sesion";
+  const cuentaEtiqueta = conSesion
+    ? lang === "es"
+      ? "Cuenta"
+      : "Account"
+    : lang === "es"
+      ? "Iniciar sesión"
+      : "Sign in";
 
   const solid = scrolled || open;
   // Todas las páginas abren ahora sobre fondo Leche —la home incluida, desde que
@@ -118,10 +183,12 @@ export function Header() {
             {lang === "es" ? "Ordena online" : "Order online"}
           </Link>
 
-          {/* "Cuenta" del mockup 01. En Fase 3 apuntará a /perfil cuando haya sesión. */}
+          {/* "Cuenta" del mockup 01. Sigue oculto por debajo de `sm`: en móvil la
+              barra solo tiene sitio para logo, idioma y hamburguesa, así que la
+              cuenta vive dentro del menú. */}
           <Link
-            href="/iniciar-sesion"
-            aria-label={lang === "es" ? "Cuenta" : "Account"}
+            href={cuentaHref}
+            aria-label={cuentaEtiqueta}
             className={cn(
               "hidden p-2 transition-colors sm:block",
               "text-espresso hover:text-terracota"
@@ -179,6 +246,44 @@ export function Header() {
                   </Link>
                 </div>
               ))}
+              {/*
+                La cuenta, que en móvil no existía en ninguna parte.
+
+                El icono de la barra se oculta por debajo de `sm` y este menú
+                nunca lo repuso, así que desde un teléfono no había forma de
+                llegar al login ni al registro: ni enlace, ni icono, ni nada.
+
+                Con sesión basta una entrada. Sin ella van las dos, porque
+                entrar y darse de alta son intenciones distintas y esconder el
+                registro detrás del login cuesta gente.
+              */}
+              {conSesion ? (
+                <Link
+                  href="/perfil"
+                  onClick={() => setOpen(false)}
+                  className="block border-b border-espresso/10 py-3.5 font-display text-2xl text-espresso transition-colors hover:text-terracota"
+                >
+                  {lang === "es" ? "Cuenta" : "Account"}
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/iniciar-sesion"
+                    onClick={() => setOpen(false)}
+                    className="block border-b border-espresso/10 py-3.5 font-display text-2xl text-espresso transition-colors hover:text-terracota"
+                  >
+                    {lang === "es" ? "Iniciar sesión" : "Sign in"}
+                  </Link>
+                  <Link
+                    href="/registro"
+                    onClick={() => setOpen(false)}
+                    className="block border-b border-espresso/10 py-3.5 font-display text-2xl text-espresso transition-colors hover:text-terracota"
+                  >
+                    {lang === "es" ? "Crear cuenta" : "Create account"}
+                  </Link>
+                </>
+              )}
+
               <Link
                 href="/menu"
                 onClick={() => setOpen(false)}
