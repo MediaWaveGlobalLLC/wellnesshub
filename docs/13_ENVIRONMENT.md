@@ -51,6 +51,31 @@ contraseña añade query string (`?siguiente=/recuperar/nueva`).
 Se comprueba de una sola forma fiable: registrando una cuenta con un correo real
 y mirando a dónde apunta el enlace del mensaje.
 
+## Supabase Auth — quién manda el correo de verificación
+
+**No lo manda Resend.** `RESEND_API_KEY` solo alimenta `src/lib/email/enviar.ts`,
+que se usa para las gift cards. El correo de confirmación de cuenta sale de
+**Supabase Auth**, por su propio SMTP.
+
+Y el SMTP de fábrica de Supabase es para desarrollo: manda **muy pocos correos
+por hora**. Pasado ese cupo, `signUp` empieza a devolver error y el registro deja
+de funcionar **sin ninguna pista en la pantalla**. No se recupera borrando
+`rate_limit_hits` —ese es el límite nuestro, no el suyo— y se pasa una tarde
+entera probando altas sin saber por qué fallan.
+
+Por eso el SMTP propio no es un lujo:
+
+| Ajuste | Dónde | Valor |
+|---|---|---|
+| Enable Custom SMTP | Project Settings → Authentication → SMTP Settings | activado |
+| Host / puerto / usuario / contraseña | ídem | credenciales SMTP de Resend |
+| Sender email | ídem | el mismo de `RESEND_FROM_EMAIL` |
+
+El cupo pasa entonces a ser el de Resend, que es el de un servicio de verdad.
+
+**Cómo se confirma que era esto:** Supabase → Logs → Auth. El error aparece ahí
+literal aunque en la web solo se vea un mensaje genérico.
+
 ## Almacenamiento — bucket `avatares`
 
 No lo crea ninguna migración, **a propósito**: una migración que toque
