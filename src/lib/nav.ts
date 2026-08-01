@@ -33,15 +33,23 @@ export const NAV_PRINCIPAL: NavItem[] = [
 ];
 
 /**
- * Bottom nav móvil del mockup 02, para las pantallas de cuenta.
+ * Bottom nav móvil, para las pantallas de cuenta.
  *
  * Solo se muestra con sesión: sin ella, tres de los cinco destinos rebotarían
  * al login y la barra sería una trampa.
+ *
+ * Los destinos salen de `05-cuenta-movil-reference.png` —Inicio, Puntos, Tienda
+ * y Perfil— más Wallet, que la referencia no lleva. Se añade a propósito: ahí
+ * viven el crédito y las gift cards, y dejarlos a dos toques de distancia
+ * escondería lo único de la cuenta que mueve dinero.
+ *
+ * Sustituye a la barra del mockup 02 (Inicio · Menú · Wallet · Comunidad ·
+ * Perfil), que estuvo declarada aquí desde la Fase 5 sin que la pintara nadie.
  */
 export const NAV_MOVIL: NavItem[] = [
   { href: "/", es: "Inicio", en: "Home" },
-  { href: "/menu", es: "Menú", en: "Menu" },
+  { href: "/puntos", es: "Puntos", en: "Points" },
+  { href: "/tienda", es: "Tienda", en: "Shop" },
   { href: "/wallet", es: "Wallet", en: "Wallet" },
-  { href: "/comunidad", es: "Comunidad", en: "Community" },
   { href: "/perfil", es: "Perfil", en: "Profile" },
 ];

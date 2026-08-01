@@ -5,6 +5,7 @@ import { fontClassNames } from "@/lib/fonts";
 import { Providers } from "@/components/Providers";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { BottomNav } from "@/components/BottomNav";
 
 export const metadata: Metadata = {
   title: {
@@ -44,6 +45,8 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
           <Footer />
+          {/* Después del footer: la barra es `fixed` y deja su propio hueco. */}
+          <BottomNav />
         </Providers>
 
         {/*

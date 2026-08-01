@@ -10,55 +10,8 @@ import { SITE, CLUB_OFERTA } from "@/lib/site";
 import { NAV_PRINCIPAL } from "@/lib/nav";
 import { BRAND_ASSETS } from "@/lib/brand-assets.generated";
 import { BagIcon, UserIcon } from "@/components/icons";
-import { crearClienteNavegador } from "@/lib/supabase/client";
-import { supabaseConfigurado } from "@/lib/supabase/env";
+import { useSesion } from "@/lib/sesion";
 import { cn } from "@/lib/cn";
-
-/**
- * ¿Hay sesión abierta?
- *
- * Se resuelve en el navegador y NO en el layout raíz, a propósito: leer la
- * sesión ahí obligaría a renderizar dinámicamente todas las páginas, y hoy
- * `/menu`, `/nosotros` o `/visitanos` se sirven estáticas.
- *
- * Devuelve `null` mientras no se sabe. Quien lo consume trata ese estado como
- * «sin sesión»: es preferible enseñar «Iniciar sesión» un instante de más que
- * dejar la cabecera sin ninguna puerta a la cuenta, que es justo el fallo que
- * esto viene a arreglar.
- */
-function useSesion(): boolean | null {
-  /*
-    La web pública tiene que funcionar aunque Supabase no esté configurado
-    (`src/lib/supabase/env.ts`); sin esa guarda el header reventaría entero. Se
-    resuelve en el inicializador y no dentro del efecto porque `supabaseConfigurado()`
-    lee variables que Next incrusta al compilar: el valor es el mismo en
-    servidor y en cliente, así que no hay ni parpadeo ni desajuste de hidratación.
-  */
-  const [hay, setHay] = useState<boolean | null>(() => (supabaseConfigurado() ? null : false));
-
-  useEffect(() => {
-    if (!supabaseConfigurado()) return;
-
-    const supabase = crearClienteNavegador();
-    let vivo = true;
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (vivo) setHay(Boolean(data.user));
-    });
-
-    // Entrar o salir tiene que repintar el menú sin recargar la página.
-    const { data: sub } = supabase.auth.onAuthStateChange((_evento, sesion) => {
-      if (vivo) setHay(Boolean(sesion));
-    });
-
-    return () => {
-      vivo = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  return hay;
-}
 
 /**
  * Header canónico — DEC-005 / plan D6.
