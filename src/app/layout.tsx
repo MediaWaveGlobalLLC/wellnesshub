@@ -14,12 +14,12 @@ export const metadata: Metadata = {
   },
   description:
     "Siembra Cafe & Matcha Bar — Wellness Hub en Condado, Puerto Rico. Café, matcha, smoothies y experiencias de bienestar. Siembra bienestar, cosecha tu mejor versión.",
-  metadataBase: new URL("https://wellnesshub.vercel.app"),
+  metadataBase: new URL("https://thewellnesshubpr.com"),
   openGraph: {
     title: "Siembra Cafe — Wellness Hub | Coffee & Matcha Bar",
     description:
       "Café, matcha y bienestar en Condado, Puerto Rico. Siembra bienestar, cosecha tu mejor versión.",
-    url: "https://wellnesshub.vercel.app",
+    url: "https://thewellnesshubpr.com",
     siteName: "Siembra Cafe",
     locale: "es_PR",
     type: "website",
