@@ -75,9 +75,28 @@ export function precioLegible(centavos: number): string {
  *
  * Reproduce exactamente la cadena que antes estaba escrita a mano en
  * `site.ts`, para que /menu no cambie de aspecto al leer de la base de datos.
+ *
+ * Los precios REPETIDOS se dicen una sola vez. Una variante no siempre es un
+ * tamaño: cuando lo que se elige es el sabor —las donas del Coffee Party, los
+ * tres cafés de la barra— las tres cuestan lo mismo, y sin esto la carta
+ * anunciaría «4.75 / 4.75 / 4.75», que se lee como si costaran catorce dólares.
+ *
+ * No afecta a ningún producto de la carta original: ninguno tiene dos tamaños
+ * al mismo precio, y `catalogo-fidelidad` sigue reconstruyendo "4.25 / 4.75"
+ * carácter a carácter.
  */
 export function precioDeCarta(variantes: VarianteCatalogo[]): string {
-  return variantes.map((v) => precioLegible(v.precioCents)).join(" / ");
+  const vistos = new Set<string>();
+  const precios: string[] = [];
+
+  for (const v of variantes) {
+    const precio = precioLegible(v.precioCents);
+    if (vistos.has(precio)) continue;
+    vistos.add(precio);
+    precios.push(precio);
+  }
+
+  return precios.join(" / ");
 }
 
 /** Variante más barata. Es la que se preselecciona al añadir al carrito. */
